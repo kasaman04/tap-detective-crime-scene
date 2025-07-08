@@ -10,4 +10,15 @@ yarn-debug.log*
 yarn-error.log*
 .DS_Store
 *.log
-1.png
+
+# Screenshots and temporary files
+*.png
+*.jpg
+*.jpeg
+*.gif
+
+# Development files
+指示書.txt
+demo.html
+app.html
+camera-app.html
