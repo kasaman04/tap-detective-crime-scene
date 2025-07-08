@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>しょーもモリー - デモ版</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        
+        .tagline {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .camera-button {
+            width: 100%;
+            background: white;
+            color: #667eea;
+            font-size: 1.2rem;
+            padding: 20px;
+            margin-bottom: 40px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+            transition: all 0.2s ease;
+        }
+        
+        .camera-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+        }
+        
+        .recent-objects {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .recent-objects h2 {
+            font-size: 1.3rem;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        
+        .object-list {
+            list-style: none;
+        }
+        
+        .object-item {
+            padding: 16px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+        
+        .object-item:last-child {
+            border-bottom: none;
+        }
+        
+        .object-item:hover {
+            background: #f5f5f5;
+        }
+        
+        .object-name {
+            font-weight: 600;
+            font-size: 1.1rem;
+            margin-bottom: 8px;
+            color: #333;
+        }
+        
+        .object-memo {
+            color: #666;
+            margin-bottom: 8px;
+        }
+        
+        .object-date {
+            font-size: 0.9rem;
+            color: #999;
+        }
+        
+        .screen {
+            display: none;
+        }
+        
+        .screen.active {
+            display: block;
+        }
+        
+        .back-button {
+            background: transparent;
+            color: white;
+            border: 1px solid white;
+            padding: 8px 16px;
+            font-size: 1rem;
+            cursor: pointer;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        
+        .demo-notice {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+            margin-top: 20px;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- ホーム画面 -->
+    <div id="home" class="screen active">
+        <div class="container">
+            <header class="header">
+                <h1>しょーもモリー</h1>
+                <p class="tagline">しょーもないけど、ちょっと便利。</p>
+            </header>
+            
+            <button class="camera-button" onclick="showScreen('camera')">
+                📷 カメラをかざす
+            </button>
+            
+            <section class="recent-objects">
+                <h2>最近かざした物体</h2>
+                <ul class="object-list">
+                    <li class="object-item" onclick="showMemo('コーヒーカップ')">
+                        <div class="object-name">コーヒーカップ</div>
+                        <div class="object-memo">彼女にもらったお気に入り</div>
+                        <div class="object-date">2024/01/20</div>
+                    </li>
+                    <li class="object-item" onclick="showMemo('家の鍵')">
+                        <div class="object-name">家の鍵</div>
+                        <div class="object-memo">玄関の棚の上に置く</div>
+                        <div class="object-date">2024/01/19</div>
+                    </li>
+                    <li class="object-item" onclick="showMemo('ノート')">
+                        <div class="object-name">ノート</div>
+                        <div class="object-memo">会議のメモはここに</div>
+                        <div class="object-date">2024/01/18</div>
+                    </li>
+                </ul>
+            </section>
+            
+            <div class="demo-notice">
+                ⚠️ これはデモ版です。実際の機能にはReact開発環境が必要です。
+            </div>
+        </div>
+    </div>
+    
+    <!-- カメラ画面 -->
+    <div id="camera" class="screen">
+        <div class="container">
+            <button class="back-button" onclick="showScreen('home')">
+                ← 戻る
+            </button>
+            <div style="background: white; padding: 40px; border-radius: 16px; text-align: center;">
+                <h2 style="margin-bottom: 20px;">📷 カメラ画面</h2>
+                <p style="color: #666; margin-bottom: 20px;">実際のカメラ機能にはWebカメラAPIが必要です</p>
+                <button class="camera-button" style="background: #4CAF50; color: white;" onclick="alert('物体を検出しました！'); showScreen('register')">
+                    メモ登録画面へ
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- メモ登録画面 -->
+    <div id="register" class="screen">
+        <div class="container">
+            <button class="back-button" onclick="showScreen('camera')">
+                ← 戻る
+            </button>
+            <div style="background: white; padding: 24px; border-radius: 16px;">
+                <h2 style="margin-bottom: 20px;">メモを登録</h2>
+                <textarea style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 16px; margin-bottom: 20px;" rows="4" placeholder="メモ内容を入力..."></textarea>
+                <button class="camera-button" style="background: #4CAF50; color: white;" onclick="alert('メモを保存しました！'); showScreen('home')">
+                    💾 保存
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(screen => {
+                screen.classList.remove('active');
+            });
+            document.getElementById(screenId).classList.add('active');
+        }
+        
+        function showMemo(objectName) {
+            alert(`${objectName}のメモを表示します`);
+        }
+    </script>
+</body>
+</html>

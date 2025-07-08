@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>しょーもモリー - ARメモアプリ</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: #f5f5f5;
+            color: #333;
+        }
+        
+        #root {
+            min-height: 100vh;
+        }
+        
+        button {
+            cursor: pointer;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        input, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.2s ease;
+        }
+        
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: #4CAF50;
+        }
+        
+        .home-container {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+        }
+        
+        .home-header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+        
+        .home-header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        
+        .tagline {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .home-main {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        
+        .camera-button {
+            width: 100%;
+            background: white;
+            color: #667eea;
+            font-size: 1.2rem;
+            padding: 20px;
+            margin-bottom: 40px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .recent-objects {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .recent-objects h2 {
+            font-size: 1.3rem;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        
+        .object-list {
+            list-style: none;
+        }
+        
+        .object-item {
+            padding: 16px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+        
+        .object-item:hover {
+            background: #f5f5f5;
+        }
+        
+        .object-name {
+            font-weight: 600;
+            font-size: 1.1rem;
+            margin-bottom: 8px;
+            color: #333;
+        }
+        
+        .object-memo {
+            color: #666;
+            margin-bottom: 8px;
+        }
+        
+        .object-date {
+            font-size: 0.9rem;
+            color: #999;
+        }
+        
+        .camera-container, .register-container, .memo-display-container {
+            min-height: 100vh;
+            background: #f5f5f5;
+        }
+        
+        .page-header {
+            background: white;
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .back-button {
+            background: #f0f0f0;
+            color: #666;
+            padding: 8px 16px;
+        }
+        
+        .page-content {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .form-group {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+        
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: #333;
+        }
+        
+        .save-button {
+            width: 100%;
+            background: #4CAF50;
+            color: white;
+            font-size: 1.2rem;
+            padding: 16px;
+            margin-top: 24px;
+        }
+        
+        .camera-view {
+            background: #333;
+            height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            margin: 20px;
+            border-radius: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+        
+        // ホーム画面コンポーネント
+        function Home({ onNavigate }) {
+            const [recentObjects, setRecentObjects] = useState([
+                {
+                    id: '1',
+                    name: 'コーヒーカップ',
+                    lastMemoExcerpt: '彼女にもらったお気に入り',
+                    lastAccessedAt: '2024/01/20'
+                },
+                {
+                    id: '2', 
+                    name: '家の鍵',
+                    lastMemoExcerpt: '玄関の棚の上に置く',
+                    lastAccessedAt: '2024/01/19'
+                },
+                {
+                    id: '3',
+                    name: 'ノート',
+                    lastMemoExcerpt: '会議のメモはここに',
+                    lastAccessedAt: '2024/01/18'
+                }
+            ]);
+            
+            return (
+                <div className="home-container">
+                    <header className="home-header">
+                        <h1>しょーもモリー</h1>
+                        <p className="tagline">しょーもないけど、ちょっと便利。</p>
+                    </header>
+
+                    <main className="home-main">
+                        <button 
+                            className="camera-button"
+                            onClick={() => onNavigate('camera')}
+                        >
+                            📷 カメラをかざす
+                        </button>
+
+                        <section className="recent-objects">
+                            <h2>最近かざした物体</h2>
+                            <ul className="object-list">
+                                {recentObjects.map((obj) => (
+                                    <li 
+                                        key={obj.id}
+                                        className="object-item"
+                                        onClick={() => onNavigate('memo', { objectId: obj.id, objectName: obj.name })}
+                                    >
+                                        <div className="object-name">{obj.name}</div>
+                                        <div className="object-memo">{obj.lastMemoExcerpt}</div>
+                                        <div className="object-date">{obj.lastAccessedAt}</div>
+                                    </li>
+                                ))}
+                            </ul>
+                        </section>
+                    </main>
+                </div>
+            );
+        }
+        
+        // カメラ画面コンポーネント
+        function Camera({ onNavigate }) {
+            const [detectedObject, setDetectedObject] = useState('');
+            
+            const simulateDetection = () => {
+                const objects = ['コーヒーカップ', 'ノート', 'ペン', 'スマートフォン', '本', '時計'];
+                const randomObject = objects[Math.floor(Math.random() * objects.length)];
+                setDetectedObject(randomObject);
+                setTimeout(() => {
+                    onNavigate('register', { objectName: randomObject });
+                }, 1500);
+            };
+            
+            return (
+                <div className="camera-container">
+                    <div className="page-header">
+                        <button className="back-button" onClick={() => onNavigate('home')}>
+                            ← 戻る
+                        </button>
+                        <h2>カメラをかざす</h2>
+                    </div>
+
+                    <div className="camera-view">
+                        <div>
+                            <p>📷 カメラ画面（シミュレーション）</p>
+                            {detectedObject && <p>検出: {detectedObject}</p>}
+                        </div>
+                    </div>
+
+                    <div className="page-content">
+                        <button 
+                            className="save-button"
+                            onClick={simulateDetection}
+                        >
+                            📷 撮影して検出
+                        </button>
+                        
+                        <button 
+                            className="save-button"
+                            onClick={() => onNavigate('register')}
+                            style={{ marginTop: '12px', background: '#2196F3' }}
+                        >
+                            📝 メモ登録画面へ
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+        
+        // メモ登録画面コンポーネント
+        function RegisterMemo({ onNavigate, params }) {
+            const [memoText, setMemoText] = useState('');
+            const objectName = params?.objectName || '新しい物体';
+            
+            const handleSave = () => {
+                const memo = {
+                    id: Date.now().toString(),
+                    objectName,
+                    text: memoText,
+                    createdAt: new Date().toLocaleDateString('ja-JP')
+                };
+                
+                const existingMemos = JSON.parse(localStorage.getItem('memos') || '[]');
+                existingMemos.push(memo);
+                localStorage.setItem('memos', JSON.stringify(existingMemos));
+                
+                alert('メモを保存しました！');
+                onNavigate('home');
+            };
+            
+            return (
+                <div className="register-container">
+                    <div className="page-header">
+                        <button className="back-button" onClick={() => onNavigate('camera')}>
+                            ← 戻る
+                        </button>
+                        <h2>{objectName}のメモを登録</h2>
+                    </div>
+
+                    <div className="page-content">
+                        <div className="form-group">
+                            <label>メモ内容</label>
+                            <textarea
+                                value={memoText}
+                                onChange={(e) => setMemoText(e.target.value)}
+                                placeholder="例：彼女にもらったやつ"
+                                rows={4}
+                            />
+                        </div>
+
+                        <button 
+                            className="save-button"
+                            onClick={handleSave}
+                            disabled={!memoText.trim()}
+                        >
+                            💾 保存
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+        
+        // メモ表示画面コンポーネント
+        function MemoDisplay({ onNavigate, params }) {
+            const [memo, setMemo] = useState(null);
+            
+            useEffect(() => {
+                const memos = JSON.parse(localStorage.getItem('memos') || '[]');
+                const foundMemo = memos.find(m => m.id === params.objectId || m.objectName === params.objectName);
+                
+                if (foundMemo) {
+                    setMemo(foundMemo);
+                } else {
+                    setMemo({
+                        id: params.objectId,
+                        objectName: params.objectName || 'コーヒーカップ',
+                        text: '彼女にもらったお気に入りのカップ。朝のコーヒータイムに使ってる。',
+                        createdAt: '2024/01/20'
+                    });
+                }
+            }, [params]);
+            
+            if (!memo) return <div>Loading...</div>;
+            
+            return (
+                <div className="memo-display-container">
+                    <div className="page-header">
+                        <button className="back-button" onClick={() => onNavigate('home')}>
+                            ← 戻る
+                        </button>
+                        <h2>{memo.objectName}のメモ</h2>
+                    </div>
+
+                    <div className="page-content">
+                        <div className="form-group">
+                            <h3>メモ</h3>
+                            <div style={{ fontSize: '1.1rem', lineHeight: '1.6' }}>
+                                {memo.text}
+                            </div>
+                        </div>
+
+                        <div style={{ textAlign: 'center', color: '#999', margin: '20px 0' }}>
+                            作成日: {memo.createdAt}
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+        
+        // メインアプリコンポーネント
+        function App() {
+            const [currentPage, setCurrentPage] = useState('home');
+            const [params, setParams] = useState(null);
+            
+            const navigate = (page, pageParams = null) => {
+                setCurrentPage(page);
+                setParams(pageParams);
+            };
+            
+            const renderPage = () => {
+                switch (currentPage) {
+                    case 'home':
+                        return <Home onNavigate={navigate} />;
+                    case 'camera':
+                        return <Camera onNavigate={navigate} />;
+                    case 'register':
+                        return <RegisterMemo onNavigate={navigate} params={params} />;
+                    case 'memo':
+                        return <MemoDisplay onNavigate={navigate} params={params} />;
+                    default:
+                        return <Home onNavigate={navigate} />;
+                }
+            };
+            
+            return renderPage();
+        }
+        
+        // アプリをレンダリング
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

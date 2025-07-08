@@ -1,0 +1,155 @@
+.camera-container {
+  min-height: 100vh;
+  background: #000;
+  display: flex;
+  flex-direction: column;
+}
+
+.camera-header {
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  position: relative;
+  z-index: 10;
+}
+
+.back-button {
+  background: transparent;
+  color: white;
+  padding: 8px 16px;
+  font-size: 1rem;
+}
+
+.back-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.camera-header h2 {
+  font-size: 1.2rem;
+  font-weight: 500;
+}
+
+.camera-view {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+.webcam {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.detection-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+}
+
+.detection-box {
+  background: rgba(76, 175, 80, 0.9);
+  padding: 24px 32px;
+  border-radius: 12px;
+  text-align: center;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.detection-label {
+  color: white;
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.detection-hint {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.9rem;
+}
+
+.detecting-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.7);
+  gap: 20px;
+}
+
+.detecting-spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid rgba(255, 255, 255, 0.3);
+  border-top: 4px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.detecting-text {
+  color: white;
+  font-size: 1.1rem;
+}
+
+.camera-controls {
+  background: rgba(0, 0, 0, 0.8);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.capture-button {
+  background: #4CAF50;
+  color: white;
+  font-size: 1.1rem;
+}
+
+.capture-button:disabled {
+  background: #666;
+  cursor: not-allowed;
+}
+
+.capture-button:hover:not(:disabled) {
+  background: #45a049;
+}
+
+.register-button {
+  background: #2196F3;
+  color: white;
+}
+
+.register-button:hover {
+  background: #1976D2;
+}
