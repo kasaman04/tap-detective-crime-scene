@@ -1,0 +1,2793 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AR探偵 - 現場検証</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.0.0/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.2/dist/coco-ssd.min.js"></script>
+    
+    <!-- 音響効果用の音声ファイル -->
+    <audio id="bgm" loop preload="auto">
+        <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmcdBCGE0fPTgjMGHm/A7+CVSA0LVqzn77BdGAg+ltryxnkpBSl+zPLZizcIGGS57OihUgwMUKXh8bllHgg2jdXzzn0vBSF1xe/glEoODFOq5O+zYBoGPJPY88p9KwUme8rx3I4+CRZiturqpVUMC1Cn4u+4ZRwIOIzU8tGAMQYfcsLu45ZKDgxSqeTwsmEaCC=" type="audio/wav">
+    </audio>
+    
+    <audio id="evidenceSound" preload="auto">
+        <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmcdBCGE0fPTgjMGHm/A7+CVSA0LVqzn77BdGAg+ltryxnkpBSl+zPLZizcIGGS57OihUgwMUKXh8bllHgg2jdXzzn0vBSF1xe/glEoODFOq5O+zYBoGPJPY88p9KwUme8rx3I4+CRZiturqpVUMC1Cn4u+4ZRwIOIzU8tGAMQYfcsLu45ZKDgxSqeTwsmEaCC=" type="audio/wav">
+    </audio>
+    
+    <audio id="scanSound" preload="auto">
+        <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmcdBCGE0fPTgjMGHm/A7+CVSA0LVqzn77BdGAg+ltryxnkpBSl+zPLZizcIGGS57OihUgwMUKXh8bllHgg2jdXzzn0vBSF1xe/glEoODFOq5O+zYBoGPJPY88p9KwUme8rx3I4+CRZiturqpVUMC1Cn4u+4ZRwIOIzU8tGAMQYfcsLu45ZKDgxSqeTwsmEaCC=" type="audio/wav">
+    </audio>
+    
+    <audio id="successSound" preload="auto">
+        <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmcdBCGE0fPTgjMGHm/A7+CVSA0LVqzn77BdGAg+ltryxnkpBSl+zPLZizcIGGS57OihUgwMUKXh8bllHgg2jdXzzn0vBSF1xe/glEoODFOq5O+zYBoGPJPY88p9KwUme8rx3I4+CRZiturqpVUMC1Cn4u+4ZRwIOIzU8tGAMQYfcsLu45ZKDgxSqeTwsmEaCC=" type="audio/wav">
+    </audio>
+    
+    <audio id="failSound" preload="auto">
+        <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmcdBCGE0fPTgjMGHm/A7+CVSA0LVqzn77BdGAg+ltryxnkpBSl+zPLZizcIGGS57OihUgwMUKXh8bllHgg2jdXzzn0vBSF1xe/glEoODFOq5O+zYBoGPJPY88p9KwUme8rx3I4+CRZiturqpVUMC1Cn4u+4ZRwIOIzU8tGAMQYfcsLu45ZKDgxSqeTwsmEaCC=" type="audio/wav">
+    </audio>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Noto Sans JP', -apple-system, sans-serif;
+            background: #000;
+            color: white;
+            overflow: hidden;
+        }
+        
+        /* タイトル画面 */
+        .title-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            background: linear-gradient(to bottom, #000, #1a0000);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            transition: opacity 1s ease;
+        }
+        
+        .title-screen.fade-out {
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .game-title {
+            font-size: 3rem;
+            font-weight: bold;
+            color: #ff0000;
+            text-shadow: 0 0 20px rgba(255, 0, 0, 0.5);
+            margin-bottom: 20px;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        .narration {
+            position: absolute;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.9);
+            padding: 20px 40px;
+            border: 2px solid #ff0000;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            max-width: 80%;
+            text-align: center;
+            opacity: 0;
+            animation: fadeIn 2s forwards;
+            animation-delay: 1s;
+        }
+        
+        @keyframes fadeIn {
+            to { opacity: 1; }
+        }
+        
+        .start-button {
+            background: #ff0000;
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            opacity: 0;
+            animation: fadeIn 2s forwards;
+            animation-delay: 3s;
+        }
+        
+        .start-button:hover {
+            background: #cc0000;
+            transform: scale(1.05);
+            box-shadow: 0 0 30px rgba(255, 0, 0, 0.5);
+        }
+        
+        /* ゲーム画面 */
+        .game-screen {
+            display: none;
+            position: relative;
+            width: 100%;
+            height: 100vh;
+        }
+        
+        .game-screen.active {
+            display: block;
+        }
+        
+        #video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            /* 高画質表示設定 */
+            image-rendering: auto;
+            image-rendering: crisp-edges;
+            image-rendering: -webkit-optimize-contrast;
+            /* スムージング無効化で鮮明に */
+            image-rendering: pixelated;
+            /* WebKit系での最適化 */
+            -webkit-backface-visibility: hidden;
+            -webkit-transform: translateZ(0);
+            /* フィルタリング改善 */
+            filter: contrast(1.1) brightness(1.05);
+        }
+        
+        #canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            /* 高画質描画設定 */
+            image-rendering: auto;
+            image-rendering: crisp-edges;
+            image-rendering: -webkit-optimize-contrast;
+        }
+        
+        /* UI要素 */
+        .game-ui {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+        }
+        
+        .evidence-counter {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px 25px;
+            border-radius: 10px;
+            border: 2px solid #ff0000;
+            pointer-events: all;
+        }
+        
+        .evidence-counter h3 {
+            font-size: 1rem;
+            margin-bottom: 5px;
+            color: #ff6666;
+        }
+        
+        .evidence-list {
+            position: absolute;
+            top: 100px;
+            left: 20px;
+            max-width: 300px;
+            max-height: 400px;
+            overflow-y: auto;
+            pointer-events: all;
+        }
+        
+        .evidence-item {
+            background: rgba(0, 0, 0, 0.9);
+            border: 1px solid #ff0000;
+            padding: 10px 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            animation: slideIn 0.5s ease;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(-100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        .evidence-item .object-name {
+            color: #ff6666;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .evidence-item .hint {
+            font-size: 0.9rem;
+            color: #ddd;
+            line-height: 1.4;
+        }
+        
+        .scan-instructions {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 0, 0, 0.9);
+            color: white;
+            padding: 15px 40px;
+            font-size: 1.1rem;
+            border-radius: 50px;
+            text-align: center;
+            pointer-events: none;
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.3);
+            animation: pulse 2s infinite;
+        }
+        
+        .tap-indicator {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            border: 3px solid #00ff00;
+            border-radius: 50%;
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            animation: tapRipple 0.6s ease-out forwards;
+        }
+        
+        @keyframes tapRipple {
+            0% {
+                width: 10px;
+                height: 10px;
+                opacity: 1;
+            }
+            100% {
+                width: 80px;
+                height: 80px;
+                opacity: 0;
+            }
+        }
+        
+        @keyframes scanPop {
+            0% {
+                transform: translate(-50%, -100%) scale(0.5);
+                opacity: 0;
+            }
+            20% {
+                transform: translate(-50%, -100%) scale(1.1);
+                opacity: 1;
+            }
+            40% {
+                transform: translate(-50%, -100%) scale(1);
+                opacity: 1;
+            }
+            100% {
+                transform: translate(-50%, -120%) scale(0.9);
+                opacity: 0;
+            }
+        }
+        
+        @keyframes particleFall {
+            0% {
+                transform: translateY(0) scale(1);
+                opacity: 1;
+            }
+            50% {
+                transform: translateY(-20px) scale(1.2);
+                opacity: 0.8;
+            }
+            100% {
+                transform: translateY(50px) scale(0.5);
+                opacity: 0;
+            }
+        }
+        
+        @keyframes overlayFloat {
+            0% {
+                transform: translate(-50%, -100%) scale(0.8);
+                opacity: 0;
+            }
+            50% {
+                transform: translate(-50%, -100%) scale(1.05);
+            }
+            100% {
+                transform: translate(-50%, -100%) scale(1);
+                opacity: 1;
+            }
+        }
+        
+        @keyframes overlayFadeOut {
+            0% {
+                transform: translate(-50%, -100%) scale(1);
+                opacity: 1;
+            }
+            100% {
+                transform: translate(-50%, -100%) scale(0.8);
+                opacity: 0;
+            }
+        }
+        
+        /* ゲーム画面 */
+        .game-screen {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            background: #000;
+            display: none;
+        }
+        
+        .game-screen.active {
+            display: block;
+        }
+        
+        #video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        #canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        
+        .game-ui {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+        }
+        
+        .evidence-counter {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            border: 2px solid #ff0000;
+            pointer-events: all;
+            min-width: 200px;
+        }
+        
+        .evidence-counter h3 {
+            margin: 0 0 10px 0;
+            font-size: 1.1rem;
+            color: #ff6666;
+        }
+        
+        .evidence-counter #evidenceCount {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #00ff00;
+        }
+        
+        .evidence-list {
+            position: absolute;
+            left: 20px;
+            top: 150px;
+            max-width: 300px;
+            max-height: 300px;
+            overflow-y: auto;
+            pointer-events: all;
+        }
+        
+        .evidence-item {
+            background: rgba(0, 0, 0, 0.9);
+            border: 1px solid #ff0000;
+            color: white;
+            padding: 10px 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            animation: slideIn 0.5s ease;
+        }
+        
+        .evidence-item .object-name {
+            color: #ff6666;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .evidence-item .hint {
+            font-size: 0.9rem;
+            color: #ddd;
+            line-height: 1.4;
+        }
+        
+        /* シナリオ選択画面 */
+        .scenario-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            background: linear-gradient(to bottom, #1a0000, #000);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 90;
+            padding: 20px;
+        }
+        
+        .scenario-title {
+            font-size: 2.5rem;
+            color: #ff0000;
+            margin-bottom: 10px;
+            text-shadow: 0 0 20px rgba(255, 0, 0, 0.5);
+            text-align: center;
+        }
+        
+        .scenario-subtitle {
+            font-size: 1.1rem;
+            color: #ccc;
+            margin-bottom: 40px;
+            text-align: center;
+        }
+        
+        .scenario-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            max-width: 1000px;
+            margin-bottom: 40px;
+        }
+        
+        .scenario-card {
+            background: rgba(20, 0, 0, 0.9);
+            border: 2px solid #ff0000;
+            border-radius: 15px;
+            padding: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            min-height: 250px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        
+        .scenario-card:hover {
+            background: rgba(40, 0, 0, 0.95);
+            transform: scale(1.05);
+            box-shadow: 0 0 30px rgba(255, 0, 0, 0.5);
+        }
+        
+        .scenario-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+        
+        .scenario-name {
+            font-size: 1.4rem;
+            color: #ff6666;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+        
+        .scenario-description {
+            font-size: 0.95rem;
+            color: #ddd;
+            line-height: 1.5;
+            margin-bottom: 15px;
+        }
+        
+        .scenario-difficulty {
+            display: inline-block;
+            background: rgba(255, 102, 102, 0.2);
+            color: #ff6666;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            margin-top: auto;
+        }
+        
+        .back-to-title {
+            background: #666;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 1rem;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .back-to-title:hover {
+            background: #888;
+            transform: scale(1.05);
+        }
+        
+        /* 推理フェーズ */
+        .deduction-phase {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 200;
+        }
+        
+        .deduction-phase.active {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .deduction-title {
+            font-size: 2.5rem;
+            color: #ff0000;
+            margin-bottom: 30px;
+            text-shadow: 0 0 20px rgba(255, 0, 0, 0.5);
+        }
+        
+        .suspect-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            max-width: 800px;
+            margin-bottom: 30px;
+        }
+        
+        .suspect-card {
+            background: rgba(20, 0, 0, 0.9);
+            border: 2px solid #ff0000;
+            padding: 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+        
+        .suspect-card:hover {
+            background: rgba(50, 0, 0, 0.9);
+            transform: scale(1.05);
+            box-shadow: 0 0 30px rgba(255, 0, 0, 0.5);
+        }
+        
+        .suspect-name {
+            font-size: 1.3rem;
+            color: #ff6666;
+            margin-bottom: 10px;
+        }
+        
+        .suspect-description {
+            font-size: 0.9rem;
+            color: #ddd;
+            line-height: 1.4;
+        }
+        
+        /* 結果画面 */
+        .result-screen {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            background: #000;
+            z-index: 300;
+        }
+        
+        .result-screen.active {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .result-success {
+            text-align: center;
+        }
+        
+        .result-success h2 {
+            font-size: 3rem;
+            color: #00ff00;
+            margin-bottom: 20px;
+            text-shadow: 0 0 30px rgba(0, 255, 0, 0.5);
+        }
+        
+        .result-fail {
+            text-align: center;
+        }
+        
+        .result-fail h2 {
+            font-size: 3rem;
+            color: #ff0000;
+            margin-bottom: 20px;
+            text-shadow: 0 0 30px rgba(255, 0, 0, 0.5);
+            animation: shake 0.5s;
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+        
+        .result-message {
+            font-size: 1.2rem;
+            color: #ddd;
+            margin-bottom: 30px;
+            max-width: 600px;
+            line-height: 1.6;
+        }
+        
+        .retry-button {
+            background: #666;
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .retry-button:hover {
+            background: #888;
+            transform: scale(1.05);
+        }
+        
+        /* ローディング */
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            padding: 30px;
+            border-radius: 15px;
+            border: 2px solid #ff0000;
+            text-align: center;
+            display: none;
+        }
+        
+        .loading.active {
+            display: block;
+        }
+        
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(255, 0, 0, 0.3);
+            border-top: 3px solid #ff0000;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* 効果音風テキスト */
+        .scan-effect {
+            position: absolute;
+            color: #00ff00;
+            font-size: 1.5rem;
+            font-weight: bold;
+            pointer-events: none;
+            animation: scanPulse 1s ease-out forwards;
+        }
+        
+        @keyframes scanPulse {
+            0% {
+                transform: scale(0.5);
+                opacity: 0;
+            }
+            50% {
+                transform: scale(1.2);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(1);
+                opacity: 0;
+            }
+        }
+        
+        /* 音量コントロール */
+        .volume-control {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px 15px;
+            border-radius: 25px;
+            border: 1px solid #ff0000;
+            pointer-events: all;
+        }
+        
+        .volume-control button {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+        
+        .volume-control button:hover {
+            background: rgba(255, 0, 0, 0.3);
+        }
+        
+        .volume-control button.muted {
+            color: #666;
+        }
+        
+        /* パーティクル効果 */
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: #ff0000;
+            border-radius: 50%;
+            pointer-events: none;
+            animation: particle-float 2s ease-out forwards;
+        }
+        
+        @keyframes particle-float {
+            0% {
+                transform: translateY(0) scale(1);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-100px) scale(0);
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- タイトル画面 -->
+    <div class="title-screen" id="titleScreen">
+        <h1 class="game-title">AR探偵 - 現場検証</h1>
+        <div class="narration">
+            事件発生から3時間...<br>
+            現場は犯行当時のまま保存されている<br>
+            君の推理で真実を暴け
+        </div>
+        <button class="start-button" onclick="showScenarioSelection()">🚪 事件現場へ</button>
+        
+        <!-- 音量コントロール -->
+        <div class="volume-control">
+            <button id="volumeBtn" onclick="toggleVolume()">🔊</button>
+            <span style="font-size: 0.8rem; color: #ccc;">音響効果</span>
+        </div>
+    </div>
+
+    <!-- シナリオ選択画面 -->
+    <div class="scenario-screen" id="scenarioScreen" style="display: none;">
+        <h2 class="scenario-title">事件を選択せよ</h2>
+        <div class="scenario-subtitle">どの現場から捜査を開始しますか？</div>
+        
+        <div class="scenario-grid" id="scenarioGrid">
+            <!-- シナリオカードは動的に生成 -->
+        </div>
+        
+        <button class="back-to-title" onclick="backToTitle()">← タイトルに戻る</button>
+    </div>
+
+    <!-- ゲーム画面 -->
+    <div class="game-screen" id="gameScreen">
+        <video id="video" autoplay muted playsinline></video>
+        <canvas id="canvas"></canvas>
+        
+        <div class="game-ui">
+            <div class="evidence-counter">
+                <h3>🔍 収集した証拠</h3>
+                <div id="evidenceCount">0 / 5</div>
+                <div style="font-size: 0.8rem; color: #888; margin-top: 5px;">
+                    緑: 証拠(有効) | 黄: 収集済み | 橙: 証拠(不足) | 灰: 一般
+                </div>
+            </div>
+            
+            <!-- 音量コントロール（ゲーム画面用） -->
+            <div class="volume-control">
+                <button id="volumeBtn2" onclick="toggleVolume()">🔊</button>
+            </div>
+            
+            <div class="evidence-list" id="evidenceList"></div>
+            
+            <div class="scan-instructions">
+                📱 画面をタップして物体を検知
+            </div>
+        </div>
+        
+        <div class="loading" id="loading">
+            <div class="loading-spinner"></div>
+            <div>AIシステム起動中...</div>
+        </div>
+    </div>
+
+    <!-- 推理フェーズ -->
+    <div class="deduction-phase" id="deductionPhase">
+        <h2 class="deduction-title">犯人を推理せよ</h2>
+        <div class="suspect-list" id="suspectList"></div>
+        <div style="color: #888; font-size: 0.9rem;">収集した証拠から、最も疑わしい人物を選べ</div>
+    </div>
+
+    <!-- 結果画面 -->
+    <div class="result-screen" id="resultScreen">
+        <!-- 動的に内容を生成 -->
+    </div>
+
+    <script>
+        // ゲーム状態管理
+        let gameState = {
+            phase: 'title', // title, scenario, game, deduction, result
+            currentScenario: null,
+            evidence: [],
+            suspects: [],
+            trueCriminal: null,
+            stream: null,
+            model: null,
+            isModelLoaded: false,
+            soundEnabled: true,
+            bgmPlaying: false,
+            score: 0,
+            maxScore: 0
+        };
+        
+        // 音響効果管理
+        const audioManager = {
+            bgm: null,
+            evidenceSound: null,
+            scanSound: null,
+            successSound: null,
+            failSound: null,
+            
+            init() {
+                this.bgm = document.getElementById('bgm');
+                this.evidenceSound = document.getElementById('evidenceSound');
+                this.scanSound = document.getElementById('scanSound');
+                this.successSound = document.getElementById('successSound');
+                this.failSound = document.getElementById('failSound');
+                
+                // 音量設定
+                this.bgm.volume = 0.3;
+                this.evidenceSound.volume = 0.6;
+                this.scanSound.volume = 0.5;
+                this.successSound.volume = 0.7;
+                this.failSound.volume = 0.7;
+            },
+            
+            playBGM() {
+                if (!gameState.soundEnabled || gameState.bgmPlaying) return;
+                try {
+                    this.bgm.currentTime = 0;
+                    this.bgm.play();
+                    gameState.bgmPlaying = true;
+                } catch (e) {
+                    console.log('BGM再生エラー:', e);
+                }
+            },
+            
+            stopBGM() {
+                if (this.bgm) {
+                    this.bgm.pause();
+                    this.bgm.currentTime = 0;
+                    gameState.bgmPlaying = false;
+                }
+            },
+            
+            playSound(soundName) {
+                if (!gameState.soundEnabled) return;
+                try {
+                    const sound = this[soundName];
+                    if (sound) {
+                        sound.currentTime = 0;
+                        sound.play();
+                    }
+                } catch (e) {
+                    console.log(`${soundName}再生エラー:`, e);
+                }
+            },
+            
+            toggleMute() {
+                gameState.soundEnabled = !gameState.soundEnabled;
+                if (!gameState.soundEnabled) {
+                    this.stopBGM();
+                }
+                this.updateVolumeButton();
+            },
+            
+            updateVolumeButton() {
+                const btns = [document.getElementById('volumeBtn'), document.getElementById('volumeBtn2')];
+                btns.forEach(btn => {
+                    if (btn) {
+                        btn.textContent = gameState.soundEnabled ? '🔊' : '🔇';
+                        btn.classList.toggle('muted', !gameState.soundEnabled);
+                    }
+                });
+            }
+        };
+
+        // 事件シナリオデータベース
+        const scenarios = {
+            study: {
+                id: 'study',
+                name: '書斎の密室事件',
+                description: '名家の書斎で発見された密室殺人事件。被害者は読書中に何者かに襲われた。',
+                background: '深夜、雷雨の中で起きた惨劇...\n施錠された書斎で発見された被害者\n犯人はどうやって密室を作ったのか？',
+                icon: '📚',
+                targetEvidence: ['book', 'laptop', 'chair', 'clock', 'scissors'],
+                specialEvidence: {
+                    'book': 'decisive', // 決定的証拠
+                    'laptop': 'circumstantial', // 状況証拠
+                    'chair': 'supporting', // 補助証拠
+                    'clock': 'decisive',
+                    'scissors': 'circumstantial'
+                },
+                criminalProfile: {
+                    primaryType: 'ビジネスパートナー',
+                    motive: '遺産相続を巡る金銭的動機',
+                    method: '密室トリックを使った計画的犯行'
+                }
+            },
+            kitchen: {
+                id: 'kitchen',
+                name: 'キッチン毒殺事件',
+                description: '高級レストランのキッチンで起きた毒殺事件。被害者は料理中に倒れた。',
+                background: '香り高い料理の匂いの中に潜む死の罠...\n最後の料理に混入された毒\n誰が、なぜ、どのように？',
+                icon: '🍳',
+                targetEvidence: ['cup', 'spoon', 'bowl', 'wine glass', 'microwave'],
+                specialEvidence: {
+                    'cup': 'decisive',
+                    'spoon': 'circumstantial', 
+                    'bowl': 'supporting',
+                    'wine glass': 'decisive',
+                    'microwave': 'false' // 偽証拠
+                },
+                criminalProfile: {
+                    primaryType: '元恋人',
+                    motive: '愛憎による感情的犯行',
+                    method: '毒物を使った計画的殺人'
+                }
+            },
+            living: {
+                id: 'living',
+                name: 'リビング撲殺事件',
+                description: '家族団らんのリビングで起きた撲殺事件。被害者は何者かに襲われた。',
+                background: '平和な家庭に突然訪れた悲劇...\n散乱したリビングの家具\n激情的な犯行の痕跡',
+                icon: '🏠',
+                targetEvidence: ['vase', 'remote', 'couch', 'tv', 'potted plant'],
+                specialEvidence: {
+                    'vase': 'decisive',
+                    'remote': 'supporting',
+                    'couch': 'circumstantial',
+                    'tv': 'circumstantial',
+                    'potted plant': 'false'
+                },
+                criminalProfile: {
+                    primaryType: '家族',
+                    motive: '家庭内の複雑な問題',
+                    method: '衝動的な撲殺'
+                }
+            }
+        };
+
+        // 証拠ヒントデータベース
+        const evidenceHints = {
+            'cup': [
+                '口紅の跡が残っている...女性の可能性が高い',
+                'まだコーヒーが温かい...犯人は遠くへ行っていない',
+                '指紋がきれいに拭き取られている...計画的犯行か',
+                '取っ手が壊れている...争いがあった証拠'
+            ],
+            'book': [
+                'ページに血痕が...激しい争いがあった',
+                '哲学書だ...知的な犯人像が浮かぶ',
+                'しおりの位置が不自然...何かのメッセージか',
+                '最後のページが破られている...証拠隠滅？'
+            ],
+            'chair': [
+                '倒れている...もみ合いの跡だ',
+                '向きが不自然...何かを隠している？',
+                '座面に高級スーツの繊維...金持ちの犯行か',
+                '脚が折れている...相当な力が加わった'
+            ],
+            'cell phone': [
+                '画面が割れている...犯人が落としたのか',
+                '最後の通話履歴...重要な手がかりだ',
+                '位置が不自然...投げられた可能性',
+                'バッテリーが切れている...長時間経過している'
+            ],
+            'knife': [
+                '血が付いている...凶器の可能性',
+                'キッチンナイフだ...衝動的犯行か',
+                '刃こぼれしている...相当使い込まれた',
+                '指紋がない...手袋をしていた？'
+            ],
+            'bottle': [
+                '中身が空...最後の晩餐か',
+                'ワインボトル...高級品だ',
+                '割れている...凶器として使われた？',
+                'ラベルが剥がされている...身元を隠す？'
+            ],
+            'laptop': [
+                '開いたまま...急いで逃げた？',
+                '画面にメッセージ...脅迫か？',
+                'キーボードに血が...争いながら操作した',
+                'カメラが作動中...録画されているかも'
+            ],
+            'bag': [
+                '中身が散乱...何かを探していた',
+                '高級ブランド品...金持ちの持ち物',
+                '底に隠しポケット...密輸か？',
+                'ストラップが切れている...引っ張られた'
+            ],
+            'person': [
+                'まだ誰かいる...犯人か？目撃者か？',
+                '怯えた表情...何かを知っている',
+                '服装が乱れている...争いに巻き込まれた？',
+                '逃げようとしている...追い詰められている'
+            ],
+            'clock': [
+                '時計が止まっている...犯行時刻か',
+                '針が不自然な位置...ダイイングメッセージ？',
+                '壊れている...争いの最中に',
+                'アラームがセットされている...計画的？'
+            ],
+            'tv': [
+                'まだ電源が入っている...急な出来事',
+                'ニュース番組...事件と関係が？',
+                '画面に指紋...最後に触った人物',
+                'リモコンが見当たらない...持ち去られた？'
+            ],
+            'potted plant': [
+                '土が散らばっている...争いの跡',
+                '枯れかけている...長期間放置',
+                '鉢が割れている...凶器として使用？',
+                '不自然な位置...何かを隠している'
+            ],
+            'scissors': [
+                '血が付着...凶器として使用',
+                '刃が欠けている...激しい使用痕',
+                '糸くずが付着...何かを切った？',
+                '指紋がくっきり...犯人特定の鍵'
+            ],
+            'fork': [
+                '曲がっている...力が加わった証拠',
+                '血痕が付着...争いの際に使用',
+                '高級な銀製品...金持ちの家',
+                '歯が欠けている...激しい衝撃'
+            ],
+            'spoon': [
+                '血が付いている...凶器の可能性',
+                '持ち手に指紋...犯人の痕跡',
+                '曲がっている...異常な力',
+                '毒の痕跡が...計画的犯行？'
+            ],
+            'bowl': [
+                '割れている...投げられた跡',
+                '中身が残っている...急いで逃走',
+                '高価な陶器...金銭的動機？',
+                '底に血痕...凶器として使用'
+            ],
+            'wine glass': [
+                '口紅の跡...女性の犯人？',
+                '割れている...争いの証拠',
+                '指紋がくっきり...身元特定可能',
+                '毒が混入...計画的殺人'
+            ],
+            'mouse': [
+                '血で汚れている...PCで何かを操作',
+                'クリック痕が異常...急いでいた',
+                '位置がずれている...争いながら使用',
+                'ワイヤレス...持ち去り可能'
+            ],
+            'keyboard': [
+                'キーが血まみれ...最後のメッセージ？',
+                '特定のキーが押しっぱなし...ダイイングメッセージ',
+                '配線が切れている...証拠隠滅',
+                '指紋が大量に...使用頻度が高い'
+            ],
+            'remote': [
+                '血が付着...争いの際に握っていた',
+                'バッテリーが抜かれている...証拠隠滅',
+                '特定のボタンが押されたまま...メッセージ？',
+                '投げつけられた跡...激しい争い'
+            ],
+            'microwave': [
+                '扉が開いている...急いで逃げた証拠',
+                '中に不審な物体...証拠隠滅？',
+                '時間設定が異常...タイマー犯行',
+                '血痕が付着...争いの現場'
+            ],
+            'vase': [
+                '割れている...凶器として使用',
+                '花が枯れている...長時間放置',
+                '位置が変わっている...犯人が動かした',
+                '破片に血痕...激しい争い'
+            ],
+            'backpack': [
+                '中身が散乱...何かを探していた',
+                'ファスナーが壊れている...急いで開けた',
+                '血が付着...争いに巻き込まれた',
+                '重要書類が入っている...動機に関連'
+            ],
+            'handbag': [
+                'ストラップが切れている...引っ張られた',
+                '財布がない...強盗の可能性',
+                '高級ブランド...標的にされた理由',
+                '中から薬が...毒殺計画？'
+            ],
+            'couch': [
+                'クッションがずれている...争いの跡',
+                '血痕が付着...犯行現場',
+                '隠れた物がある...証拠隠し',
+                '座り方が不自然...恐怖の表れ'
+            ],
+            'bed': [
+                'シーツが乱れている...争いがあった',
+                '血痕が大量に...致命傷の現場',
+                '枕の位置が異常...窒息の可能性',
+                '隠し場所がある...重要な証拠'
+            ],
+            'dining table': [
+                '食事が残っている...突然の犯行',
+                'テーブルが倒れている...激しい争い',
+                '血痕が飛び散っている...現場はここ',
+                '高級な木材...金銭的動機'
+            ]
+        };
+
+        // 犯人タイプ
+        const criminalTypes = [
+            {
+                name: '元恋人',
+                description: '感情的な動機、親密な関係の痕跡',
+                relatedEvidence: ['cup', 'cell phone', 'book']
+            },
+            {
+                name: 'ビジネスパートナー',
+                description: '金銭的動機、仕事関連の証拠',
+                relatedEvidence: ['laptop', 'chair', 'bag']
+            },
+            {
+                name: '家族',
+                description: '複雑な感情、日常的な物品',
+                relatedEvidence: ['tv', 'potted plant', 'clock']
+            },
+            {
+                name: '強盗',
+                description: '金品目的、暴力的な痕跡',
+                relatedEvidence: ['knife', 'bag', 'chair']
+            },
+            {
+                name: 'ストーカー',
+                description: '執着心、異常な行動パターン',
+                relatedEvidence: ['cell phone', 'person', 'book']
+            }
+        ];
+
+        // 物体名の日本語マッピング
+        const objectNames = {
+            'cup': 'カップ',
+            'book': '本',
+            'chair': '椅子',
+            'cell phone': 'スマートフォン',
+            'knife': 'ナイフ',
+            'bottle': 'ボトル',
+            'laptop': 'ノートPC',
+            'backpack': 'バッグ',
+            'handbag': 'バッグ',
+            'person': '人影',
+            'clock': '時計',
+            'tv': 'テレビ',
+            'potted plant': '植木鉢',
+            'scissors': 'ハサミ',
+            'remote': 'リモコン',
+            'couch': 'ソファ',
+            'bed': 'ベッド',
+            'dining table': 'テーブル',
+            'vase': '花瓶',
+            'fork': 'フォーク',
+            'spoon': 'スプーン',
+            'bowl': 'ボウル',
+            'wine glass': 'ワイングラス',
+            'mouse': 'マウス',
+            'keyboard': 'キーボード',
+            'microwave': '電子レンジ'
+        };
+
+        // 高精度AIモデル読み込み
+        async function loadModel() {
+            if (gameState.isModelLoaded) return;
+            
+            try {
+                console.log('高精度AIモデルを読み込み中...');
+                
+                // 最高精度モデル設定
+                const modelConfig = {
+                    base: 'mobilenet_v2',  // より高精度なベースモデル
+                    modelUrl: undefined     // 最新の高精度モデルを使用
+                };
+                
+                gameState.model = await cocoSsd.load(modelConfig);
+                gameState.isModelLoaded = true;
+                
+                console.log('高精度AIモデル読み込み完了');
+                console.log('モデル詳細:', {
+                    inputShape: gameState.model.inputs ? gameState.model.inputs[0].shape : 'N/A',
+                    classes: 'COCO 80クラス（高精度版）'
+                });
+                
+                document.getElementById('loading').classList.remove('active');
+            } catch (error) {
+                console.error('モデル読み込みエラー:', error);
+                alert('高精度AIシステムの起動に失敗しました');
+            }
+        }
+
+        // シナリオ選択画面表示
+        function showScenarioSelection() {
+            // 音響システム初期化
+            audioManager.init();
+            
+            // タイトルからシナリオ選択画面へ
+            document.getElementById('titleScreen').classList.add('fade-out');
+            
+            setTimeout(() => {
+                document.getElementById('titleScreen').style.display = 'none';
+                document.getElementById('scenarioScreen').style.display = 'flex';
+                
+                gameState.phase = 'scenario';
+                
+                // シナリオカードを生成
+                generateScenarioCards();
+                
+                // BGM開始
+                audioManager.playBGM();
+            }, 1000);
+        }
+        
+        // シナリオカード生成
+        function generateScenarioCards() {
+            const grid = document.getElementById('scenarioGrid');
+            grid.innerHTML = '';
+            
+            Object.values(scenarios).forEach(scenario => {
+                const card = document.createElement('div');
+                card.className = 'scenario-card';
+                
+                // 難易度計算
+                const evidenceCount = scenario.targetEvidence.length;
+                const difficultyLevel = evidenceCount <= 5 ? '初級' : evidenceCount <= 7 ? '中級' : '上級';
+                
+                card.innerHTML = `
+                    <div class="scenario-icon">${scenario.icon}</div>
+                    <div class="scenario-name">${scenario.name}</div>
+                    <div class="scenario-description">${scenario.description}</div>
+                    <div class="scenario-difficulty">難易度: ${difficultyLevel} (証拠${evidenceCount}個)</div>
+                `;
+                
+                card.onclick = () => selectScenario(scenario.id);
+                grid.appendChild(card);
+            });
+        }
+        
+        // シナリオ選択
+        function selectScenario(scenarioId) {
+            gameState.currentScenario = scenarios[scenarioId];
+            gameState.maxScore = calculateMaxScore(gameState.currentScenario);
+            
+            // シナリオ導入画面表示
+            showScenarioIntro();
+        }
+        
+        // シナリオ導入画面
+        function showScenarioIntro() {
+            const scenario = gameState.currentScenario;
+            
+            // 導入文を表示
+            const introHtml = `
+                <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100vh; 
+                            background: rgba(0,0,0,0.95); display: flex; flex-direction: column; 
+                            align-items: center; justify-content: center; z-index: 200; padding: 40px; text-align: center;">
+                    <div style="font-size: 2rem; color: #ff0000; margin-bottom: 20px; text-shadow: 0 0 20px rgba(255, 0, 0, 0.5);">
+                        ${scenario.icon} ${scenario.name}
+                    </div>
+                    <div style="font-size: 1.2rem; color: #ddd; line-height: 1.8; max-width: 600px; margin-bottom: 30px;">
+                        ${scenario.background.replace(/\n/g, '<br>')}
+                    </div>
+                    <div style="background: rgba(255, 0, 0, 0.1); border: 1px solid #ff0000; 
+                                padding: 15px; border-radius: 10px; margin-bottom: 30px; max-width: 500px;">
+                        <strong style="color: #ff6666;">捜査目標:</strong><br>
+                        証拠を${scenario.targetEvidence.length}個発見し、真犯人を特定せよ
+                    </div>
+                    <button onclick="startGame()" style="background: #ff0000; color: white; border: none; 
+                            padding: 15px 40px; font-size: 1.2rem; border-radius: 50px; cursor: pointer; 
+                            transition: all 0.3s ease; box-shadow: 0 0 20px rgba(255, 0, 0, 0.3);">
+                        🔍 捜査開始
+                    </button>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', introHtml);
+        }
+        
+        // タイトルに戻る
+        function backToTitle() {
+            document.getElementById('scenarioScreen').style.display = 'none';
+            document.getElementById('titleScreen').style.display = 'block';
+            document.getElementById('titleScreen').classList.remove('fade-out');
+            
+            gameState.phase = 'title';
+            audioManager.stopBGM();
+        }
+        
+        // 最大スコア計算
+        function calculateMaxScore(scenario) {
+            let maxScore = 0;
+            scenario.targetEvidence.forEach(evidenceType => {
+                const quality = scenario.specialEvidence[evidenceType] || 'supporting';
+                switch (quality) {
+                    case 'decisive': maxScore += 100; break;
+                    case 'circumstantial': maxScore += 60; break;
+                    case 'supporting': maxScore += 30; break;
+                    case 'false': maxScore -= 20; break;
+                }
+            });
+            return maxScore + 200; // 正しい推理ボーナス
+        }
+
+        // ゲーム開始
+        async function startGame() {
+            console.log('ゲーム開始処理を実行中...');
+            
+            // 導入画面を削除
+            const introElement = document.querySelector('[style*="position: absolute"][style*="z-index: 200"]');
+            if (introElement) {
+                introElement.remove();
+                console.log('導入画面を削除しました');
+            }
+            
+            // シナリオ選択画面を非表示
+            document.getElementById('scenarioScreen').style.display = 'none';
+            
+            // 音響システム初期化
+            audioManager.init();
+            
+            // パーティクル効果
+            createParticles(10);
+            
+            // ゲーム画面を表示
+            document.getElementById('gameScreen').style.display = 'block';
+            document.getElementById('gameScreen').classList.add('active');
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('loading').classList.add('active');
+            
+            gameState.phase = 'game';
+            console.log('ゲームフェーズをgameに設定');
+            
+            // BGM開始
+            audioManager.playBGM();
+            
+            try {
+                console.log('カメラ初期化を開始...');
+                await initCamera();
+                console.log('カメラ初期化完了');
+                
+                console.log('AIモデル読み込みを開始...');
+                await loadModel();
+                console.log('AIモデル読み込み完了');
+                
+                // タップイベントリスナーを追加
+                setupTapDetection();
+                console.log('タップ検知システムを設定');
+                
+                // ローディング画面を非表示
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('loading').classList.remove('active');
+                
+                console.log('ゲーム開始処理が完了しました');
+                
+            } catch (error) {
+                console.error('ゲーム開始エラー:', error);
+                alert(`ゲーム開始に失敗しました: ${error.message}`);
+                
+                // エラー時はシナリオ選択に戻る
+                document.getElementById('gameScreen').style.display = 'none';
+                document.getElementById('scenarioScreen').style.display = 'flex';
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+        
+        // タップ検知システムのセットアップ
+        function setupTapDetection() {
+            const gameScreen = document.getElementById('gameScreen');
+            
+            // タッチイベント（スマートフォン対応）
+            gameScreen.addEventListener('touchstart', handleTap, { passive: false });
+            
+            // クリックイベント（PC対応）
+            gameScreen.addEventListener('click', handleTap);
+        }
+        
+        // タップ/クリック処理
+        function handleTap(event) {
+            event.preventDefault();
+            
+            if (!gameState.isModelLoaded || gameState.phase !== 'game') return;
+            
+            // タップ座標を取得
+            let clientX, clientY;
+            if (event.type === 'touchstart') {
+                const touch = event.touches[0];
+                clientX = touch.clientX;
+                clientY = touch.clientY;
+            } else {
+                clientX = event.clientX;
+                clientY = event.clientY;
+            }
+            
+            // 画面座標をキャンバス座標に変換
+            const canvas = document.getElementById('canvas');
+            const rect = canvas.getBoundingClientRect();
+            
+            const tapX = (clientX - rect.left) * (canvas.width / rect.width);
+            const tapY = (clientY - rect.top) * (canvas.height / rect.height);
+            
+            console.log(`タップ位置: (${Math.round(tapX)}, ${Math.round(tapY)})`);
+            
+            // タップエフェクト表示
+            showTapIndicator(clientX, clientY);
+            
+            // タップ位置での物体検知を実行
+            detectObjectAtPosition(tapX, tapY);
+        }
+        
+        // タップインジケーター表示
+        function showTapIndicator(x, y) {
+            const indicator = document.createElement('div');
+            indicator.className = 'tap-indicator';
+            indicator.style.left = x + 'px';
+            indicator.style.top = y + 'px';
+            
+            document.getElementById('gameScreen').appendChild(indicator);
+            
+            // アニメーション完了後に削除
+            setTimeout(() => {
+                indicator.remove();
+            }, 600);
+        }
+
+        // カメラ初期化（フォールバック対応版）
+        async function initCamera() {
+            console.log('カメラ初期化開始...');
+            
+            try {
+                // HTTPS確認
+                if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+                    console.warn('HTTPSではありません。カメラアクセスが制限される可能性があります。');
+                }
+                
+                // ブラウザのサポート確認
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    throw new Error('このブラウザはカメラアクセスに対応していません。Chrome、Firefox、Safari等の最新ブラウザをご使用ください。');
+                }
+                
+                // デバイス一覧の確認
+                try {
+                    const devices = await navigator.mediaDevices.enumerateDevices();
+                    const videoDevices = devices.filter(device => device.kind === 'videoinput');
+                    console.log(`利用可能なカメラデバイス: ${videoDevices.length}個`);
+                    
+                    if (videoDevices.length === 0) {
+                        throw new Error('カメラデバイスが見つかりません。カメラが接続されているか確認してください。');
+                    }
+                } catch (enumError) {
+                    console.warn('デバイス一覧取得エラー:', enumError);
+                }
+                
+                // 複数の設定で段階的に試行
+                const cameraConfigs = [
+                    // 設定1: 基本設定
+                    {
+                        video: {
+                            width: { ideal: 640 },
+                            height: { ideal: 480 }
+                        }
+                    },
+                    // 設定2: より制限の少ない設定
+                    {
+                        video: true
+                    }
+                ];
+                
+                let stream = null;
+                let lastError = null;
+                
+                for (let i = 0; i < cameraConfigs.length; i++) {
+                    try {
+                        console.log(`カメラ設定${i + 1}を試行中...`);
+                        stream = await navigator.mediaDevices.getUserMedia(cameraConfigs[i]);
+                        console.log(`カメラ設定${i + 1}で成功`);
+                        break;
+                    } catch (configError) {
+                        console.log(`カメラ設定${i + 1}失敗:`, configError.message);
+                        lastError = configError;
+                    }
+                }
+                
+                if (!stream) {
+                    throw lastError || new Error('全てのカメラ設定で失敗しました');
+                }
+                
+                gameState.stream = stream;
+                
+                const video = document.getElementById('video');
+                if (!video) {
+                    throw new Error('ビデオ要素が見つかりません');
+                }
+                
+                video.srcObject = stream;
+                console.log('ビデオ要素にストリームを設定');
+                
+                // ビデオメタデータの読み込み完了を待つ
+                await new Promise((resolve, reject) => {
+                    const timeoutId = setTimeout(() => {
+                        reject(new Error('ビデオ読み込みタイムアウト（5秒）'));
+                    }, 5000);
+                    
+                    video.onloadedmetadata = () => {
+                        clearTimeout(timeoutId);
+                        console.log(`ビデオサイズ: ${video.videoWidth}x${video.videoHeight}`);
+                        
+                        // キャンバスサイズ設定
+                        const canvas = document.getElementById('canvas');
+                        if (canvas) {
+                            canvas.width = video.videoWidth || 640;
+                            canvas.height = video.videoHeight || 480;
+                            console.log(`キャンバスサイズ設定: ${canvas.width}x${canvas.height}`);
+                        }
+                        
+                        resolve();
+                    };
+                    
+                    video.onerror = (error) => {
+                        clearTimeout(timeoutId);
+                        console.error('ビデオ読み込みエラー:', error);
+                        reject(new Error('ビデオの読み込みに失敗しました'));
+                    };
+                });
+                
+                // ビデオ再生開始
+                try {
+                    await video.play();
+                    console.log('ビデオ再生開始');
+                } catch (playError) {
+                    console.warn('自動再生失敗:', playError.message);
+                    // 自動再生失敗は致命的エラーではない
+                }
+                
+                console.log('カメラ初期化完了');
+                return true;
+                
+            } catch (error) {
+                console.error('カメラ初期化エラー:', error);
+                
+                // ストリームのクリーンアップ
+                if (gameState.stream) {
+                    gameState.stream.getTracks().forEach(track => track.stop());
+                    gameState.stream = null;
+                }
+                
+                // エラータイプに応じた詳細メッセージ
+                let errorMessage = 'カメラの初期化に失敗しました。\n\n';
+                
+                if (error.name === 'NotAllowedError') {
+                    errorMessage += '【原因】カメラアクセスが拒否されました\n\n';
+                    errorMessage += '【解決方法】\n';
+                    errorMessage += '1. ブラウザのアドレスバー左側のカメラアイコンをクリック\n';
+                    errorMessage += '2. 「カメラ」を「許可」に設定\n';
+                    errorMessage += '3. ページを再読み込み';
+                } else if (error.name === 'NotFoundError') {
+                    errorMessage += '【原因】カメラデバイスが見つかりません\n\n';
+                    errorMessage += '【解決方法】\n';
+                    errorMessage += '1. カメラが正しく接続されているか確認\n';
+                    errorMessage += '2. 他のアプリでカメラが使用されていないか確認\n';
+                    errorMessage += '3. PCを再起動してお試しください';
+                } else if (error.name === 'NotReadableError') {
+                    errorMessage += '【原因】カメラが他のアプリで使用中です\n\n';
+                    errorMessage += '【解決方法】\n';
+                    errorMessage += '1. Zoom、Teams等のビデオ通話アプリを終了\n';
+                    errorMessage += '2. 他のカメラアプリを終了\n';
+                    errorMessage += '3. ブラウザを再起動';
+                } else if (error.name === 'OverconstrainedError') {
+                    errorMessage += '【原因】カメラの設定が対応していません\n\n';
+                    errorMessage += '【解決方法】\n';
+                    errorMessage += '1. 古いカメラドライバを更新\n';
+                    errorMessage += '2. 別のブラウザで試行\n';
+                    errorMessage += '3. システムを再起動';
+                } else {
+                    errorMessage += `【詳細エラー】${error.message}\n\n`;
+                    errorMessage += '【一般的な解決方法】\n';
+                    errorMessage += '1. HTTPS接続であることを確認\n';
+                    errorMessage += '2. 最新のブラウザを使用\n';
+                    errorMessage += '3. カメラの物理的接続を確認';
+                }
+                
+                throw new Error(errorMessage);
+            }
+        }
+
+        // タップ位置での物体検知
+        async function detectObjectAtPosition(tapX, tapY) {
+            if (!gameState.isModelLoaded) {
+                alert('AIシステムがまだ起動していません');
+                return;
+            }
+
+            if (gameState.evidence.length >= 5) {
+                // 推理フェーズへ
+                startDeductionPhase();
+                return;
+            }
+
+            // スキャン音再生
+            audioManager.playSound('scanSound');
+
+            const video = document.getElementById('video');
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+
+            try {
+                // 高精度物体検出実行
+                const predictions = await gameState.model.detect(video, 100, 0.1);
+                
+                console.log(`全体で${predictions.length}個の物体を検出`);
+                
+                // タップ位置に最も近い物体を検索
+                const targetObject = findObjectAtPosition(predictions, tapX, tapY);
+                
+                if (!targetObject) {
+                    showScanEffect('❌ 物体なし', tapX, tapY);
+                    return;
+                }
+                
+                const objectType = targetObject.class;
+                const confidence = Math.round(targetObject.score * 100);
+                const japaneseName = objectNames[objectType] || objectType;
+                
+                console.log(`タップ位置の物体: ${objectType} (信頼度: ${confidence}%)`);
+                
+                // キャンバスクリア
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                // タップした物体のみを強調表示
+                highlightTappedObject(targetObject, ctx, tapX, tapY);
+                
+                // 3D情報オーバーレイを表示
+                show3DInfoOverlay(targetObject, tapX, tapY, objectType, confidence);
+                
+                // 信頼度チェック
+                const dynamicThreshold = getDynamicThreshold(objectType);
+                if (confidence < dynamicThreshold) {
+                    showScanEffect(`📊 ${japaneseName}\n信頼度不足: ${confidence}%\n(要${Math.round(dynamicThreshold*100)}%+)`, tapX, tapY);
+                    return;
+                }
+                
+                // 重複チェック
+                const collectedTypes = gameState.evidence.map(e => e.type);
+                if (collectedTypes.includes(objectType)) {
+                    showScanEffect(`♻️ ${japaneseName}\n既に収集済み`, tapX, tapY);
+                    return;
+                }
+                
+                // 証拠として有効かチェック
+                if (evidenceHints[objectType]) {
+                    console.log(`新しい証拠発見: ${objectType} (信頼度: ${confidence}%)`);
+                    
+                    // 証拠品質を判定
+                    const evidenceQuality = getEvidenceQuality(objectType);
+                    const score = calculateEvidenceScore(evidenceQuality, confidence);
+                    
+                    addEvidence(objectType, targetObject.bbox, evidenceQuality, score);
+                    
+                    // 品質に応じたエフェクト表示
+                    const qualityText = getQualityDisplayText(evidenceQuality);
+                    showScanEffect(`✨ ${qualityText}証拠発見！\n${japaneseName}\n+${score}pts`, tapX, tapY);
+                } else {
+                    showScanEffect(`📝 ${japaneseName}\n一般物体`, tapX, tapY);
+                }
+                
+            } catch (error) {
+                console.error('物体検知エラー:', error);
+                showScanEffect('❌ 検知エラー', tapX, tapY);
+            }
+        }
+        
+        // タップ位置の物体を検索
+        function findObjectAtPosition(predictions, tapX, tapY) {
+            let closestObject = null;
+            let minDistance = Infinity;
+            
+            predictions.forEach(prediction => {
+                const [x, y, width, height] = prediction.bbox;
+                
+                // バウンディングボックス内かチェック
+                if (tapX >= x && tapX <= x + width && tapY >= y && tapY <= y + height) {
+                    // バウンディングボックス内の場合、中心からの距離を計算
+                    const centerX = x + width / 2;
+                    const centerY = y + height / 2;
+                    const distance = Math.sqrt(Math.pow(tapX - centerX, 2) + Math.pow(tapY - centerY, 2));
+                    
+                    if (distance < minDistance) {
+                        minDistance = distance;
+                        closestObject = prediction;
+                    }
+                }
+            });
+            
+            // バウンディングボックス内に物体がない場合、最も近い物体を検索
+            if (!closestObject) {
+                predictions.forEach(prediction => {
+                    const [x, y, width, height] = prediction.bbox;
+                    const centerX = x + width / 2;
+                    const centerY = y + height / 2;
+                    const distance = Math.sqrt(Math.pow(tapX - centerX, 2) + Math.pow(tapY - centerY, 2));
+                    
+                    // 一定距離内の物体のみ対象
+                    if (distance < 100 && distance < minDistance) {
+                        minDistance = distance;
+                        closestObject = prediction;
+                    }
+                });
+            }
+            
+            return closestObject;
+        }
+        
+        // タップした物体を強調表示
+        function highlightTappedObject(prediction, ctx, tapX, tapY) {
+            const [x, y, width, height] = prediction.bbox;
+            const className = prediction.class;
+            const confidence = Math.round(prediction.score * 100);
+            const japaneseName = objectNames[className] || className;
+            
+            // 物体の種類に応じた色設定
+            const isEvidence = evidenceHints[className];
+            const collectedTypes = gameState.evidence.map(e => e.type);
+            const isCollected = collectedTypes.includes(className);
+            const dynamicThreshold = getDynamicThreshold(className);
+            const meetsThreshold = confidence >= dynamicThreshold;
+            
+            let boxColor;
+            if (isEvidence && meetsThreshold && !isCollected) {
+                boxColor = '#00ff00'; // 緑: 新しい証拠
+            } else if (isEvidence && isCollected) {
+                boxColor = '#ffaa00'; // 黄: 収集済み
+            } else if (isEvidence && !meetsThreshold) {
+                boxColor = '#ff6600'; // オレンジ: 信頼度不足
+            } else {
+                boxColor = '#666666'; // 灰: 一般物体
+            }
+            
+            // 強調されたバウンディングボックス
+            ctx.strokeStyle = boxColor;
+            ctx.lineWidth = 4;
+            ctx.strokeRect(x, y, width, height);
+            
+            // タップ位置から物体への線
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            ctx.moveTo(tapX, tapY);
+            ctx.lineTo(x + width/2, y + height/2);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            
+            // ラベル
+            const labelText = `${japaneseName} ${confidence}%`;
+            ctx.font = 'bold 16px Arial';
+            const textWidth = ctx.measureText(labelText).width;
+            
+            // ラベル背景
+            ctx.fillStyle = boxColor + 'CC';
+            ctx.fillRect(x, y - 30, textWidth + 20, 25);
+            
+            // ラベルテキスト
+            ctx.fillStyle = '#ffffff';
+            ctx.fillText(labelText, x + 10, y - 10);
+        }
+
+        // 旧スキャン機能（使用しない）
+        async function scanForEvidence() {
+            if (!gameState.isModelLoaded) {
+                alert('AIシステムがまだ起動していません');
+                return;
+            }
+
+            if (gameState.evidence.length >= 5) {
+                // 推理フェーズへ
+                startDeductionPhase();
+                return;
+            }
+
+            // スキャン音再生
+            audioManager.playSound('scanSound');
+
+            const video = document.getElementById('video');
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+
+            try {
+                // 超高精度物体検出実行（マルチステージ検出）
+                let allPredictions = [];
+                
+                // ステージ1: 最高精度検出（7回）
+                const ultraHighPrecisionConfig = {
+                    maxNumBoxes: 150,       // 検出数を最大化
+                    iouThreshold: 0.05,     // 重複除去を最小化
+                    scoreThreshold: 0.03    // 信頼度閾値を最低に
+                };
+                
+                for (let attempt = 0; attempt < 7; attempt++) {
+                    const predictions = await gameState.model.detect(
+                        video, 
+                        ultraHighPrecisionConfig.maxNumBoxes, 
+                        ultraHighPrecisionConfig.scoreThreshold
+                    );
+                    allPredictions = allPredictions.concat(predictions);
+                    
+                    // フレーム間変化を利用した多重検出
+                    await new Promise(resolve => setTimeout(resolve, 50));
+                }
+                
+                // ステージ2: 中精度検出（4回）
+                const mediumPrecisionConfig = {
+                    maxNumBoxes: 100,
+                    iouThreshold: 0.1,
+                    scoreThreshold: 0.08
+                };
+                
+                for (let attempt = 0; attempt < 4; attempt++) {
+                    const predictions = await gameState.model.detect(
+                        video, 
+                        mediumPrecisionConfig.maxNumBoxes, 
+                        mediumPrecisionConfig.scoreThreshold
+                    );
+                    allPredictions = allPredictions.concat(predictions);
+                    await new Promise(resolve => setTimeout(resolve, 75));
+                }
+                
+                // ステージ3: 標準検出（2回）
+                const standardConfig = {
+                    maxNumBoxes: 50,
+                    iouThreshold: 0.2,
+                    scoreThreshold: 0.15
+                };
+                
+                for (let attempt = 0; attempt < 2; attempt++) {
+                    const predictions = await gameState.model.detect(
+                        video, 
+                        standardConfig.maxNumBoxes, 
+                        standardConfig.scoreThreshold
+                    );
+                    allPredictions = allPredictions.concat(predictions);
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                }
+                
+                // 重複除去と信頼度集約
+                const aggregatedPredictions = aggregatePredictions(allPredictions);
+                
+                console.log(`検出結果: ${aggregatedPredictions.length}個の物体`);
+                
+                // キャンバスクリア
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                // 検出された物体を処理（重複除外機能付き）
+                let newEvidence = false;
+                
+                // 既に収集済みの証拠タイプをリスト化
+                const collectedTypes = gameState.evidence.map(e => e.type);
+                console.log('既に収集済みの証拠:', collectedTypes);
+                
+                for (const prediction of aggregatedPredictions) {
+                    const objectType = prediction.class;
+                    const confidence = Math.round(prediction.score * 100);
+                    
+                    // クラス別の動的信頼度閾値
+                    const dynamicThreshold = getDynamicThreshold(objectType);
+                    if (confidence < dynamicThreshold) continue;
+                    
+                    // 既に収集済みの証拠タイプは完全にスキップ
+                    if (collectedTypes.includes(objectType)) {
+                        console.log(`スキップ: ${objectType} (既に収集済み)`);
+                        continue;
+                    }
+                    
+                    // 証拠として記録可能な物体のみ
+                    if (evidenceHints[objectType]) {
+                        console.log(`新しい証拠発見: ${objectType} (信頼度: ${confidence}%)`);
+                        addEvidence(objectType, prediction.bbox);
+                        newEvidence = true;
+                        break; // 一度に1つの証拠のみ
+                    }
+                }
+                
+                // 検出された全物体を表示（デバッグ用）
+                drawAllDetections(aggregatedPredictions, ctx);
+                
+                if (!newEvidence && aggregatedPredictions.length > 0) {
+                    showScanEffect('❌ 証拠なし', canvas.width / 2, canvas.height / 2);
+                } else if (aggregatedPredictions.length === 0) {
+                    showScanEffect('🔍 検出なし', canvas.width / 2, canvas.height / 2);
+                }
+                
+            } catch (error) {
+                console.error('スキャンエラー:', error);
+            }
+        }
+
+        // 証拠品質判定
+        function getEvidenceQuality(objectType) {
+            if (!gameState.currentScenario) return 'supporting';
+            
+            const scenario = gameState.currentScenario;
+            return scenario.specialEvidence[objectType] || 'supporting';
+        }
+        
+        // 証拠スコア計算
+        function calculateEvidenceScore(quality, confidence) {
+            const baseScores = {
+                'decisive': 100,
+                'circumstantial': 60,
+                'supporting': 30,
+                'false': -20
+            };
+            
+            const baseScore = baseScores[quality] || 30;
+            const confidenceBonus = Math.round((confidence - 50) * 0.5); // 信頼度ボーナス
+            
+            return Math.max(baseScore + confidenceBonus, quality === 'false' ? -20 : 10);
+        }
+        
+        // 品質表示テキスト
+        function getQualityDisplayText(quality) {
+            const qualityTexts = {
+                'decisive': '🔴決定的',
+                'circumstantial': '🟡状況',
+                'supporting': '🔵補助',
+                'false': '⚫偽'
+            };
+            
+            return qualityTexts[quality] || '🔵補助';
+        }
+        
+        // 品質に応じた色取得
+        function getQualityColor(quality) {
+            const qualityColors = {
+                'decisive': '#ff0000',
+                'circumstantial': '#ffaa00',
+                'supporting': '#0088ff',
+                'false': '#666666'
+            };
+            
+            return qualityColors[quality] || '#0088ff';
+        }
+
+        // 証拠追加
+        function addEvidence(objectType, bbox, quality = 'supporting', score = 30) {
+            const hints = evidenceHints[objectType];
+            const randomHint = hints[Math.floor(Math.random() * hints.length)];
+            const japaneseName = objectNames[objectType] || objectType;
+            
+            const evidence = {
+                type: objectType,
+                name: japaneseName,
+                hint: randomHint,
+                bbox: bbox,
+                quality: quality,
+                score: score,
+                timestamp: new Date()
+            };
+            
+            gameState.evidence.push(evidence);
+            gameState.score += score;
+            updateEvidenceUI();
+            
+            // 音響効果とエフェクト
+            audioManager.playSound('evidenceSound');
+            const [x, y] = bbox;
+            showScanEffect('✨ 証拠発見！', x + bbox[2] / 2, y);
+            
+            // パーティクル効果（品質に応じた色）
+            const particleColor = getQualityColor(quality);
+            createParticles(5, x + bbox[2] / 2, y, particleColor);
+            
+            // 目標証拠数に達したら推理フェーズへ
+            const targetCount = gameState.currentScenario ? gameState.currentScenario.targetEvidence.length : 5;
+            if (gameState.evidence.length >= targetCount) {
+                setTimeout(() => {
+                    startDeductionPhase();
+                }, 2000);
+            }
+        }
+
+        // 証拠UI更新
+        function updateEvidenceUI() {
+            const targetCount = gameState.currentScenario ? gameState.currentScenario.targetEvidence.length : 5;
+            const count = document.getElementById('evidenceCount');
+            count.textContent = `${gameState.evidence.length} / ${targetCount}`;
+            
+            // スコア表示を追加
+            const scoreDisplay = document.querySelector('.score-display') || (() => {
+                const scoreEl = document.createElement('div');
+                scoreEl.className = 'score-display';
+                scoreEl.style.cssText = `
+                    position: absolute;
+                    top: 120px;
+                    right: 20px;
+                    background: rgba(0, 0, 0, 0.8);
+                    color: #fff;
+                    padding: 10px;
+                    border-radius: 8px;
+                    font-size: 0.9rem;
+                    border: 1px solid #ff0000;
+                `;
+                document.querySelector('.game-ui').appendChild(scoreEl);
+                return scoreEl;
+            })();
+            
+            scoreDisplay.innerHTML = `
+                📊 スコア: ${gameState.score}/${gameState.maxScore}<br>
+                🎯 進捗: ${Math.round((gameState.score / gameState.maxScore) * 100)}%
+            `;
+            
+            const list = document.getElementById('evidenceList');
+            list.innerHTML = '';
+            
+            gameState.evidence.forEach((evidence, index) => {
+                const item = document.createElement('div');
+                item.className = 'evidence-item';
+                
+                // 品質に応じたスタイル
+                const qualityColor = getQualityColor(evidence.quality || 'supporting');
+                const qualityText = getQualityDisplayText(evidence.quality || 'supporting');
+                
+                item.style.borderLeft = `4px solid ${qualityColor}`;
+                
+                item.innerHTML = `
+                    <div class="object-name">
+                        ${qualityText} 証拠${index + 1}: ${evidence.name}
+                        <span style="float: right; color: ${qualityColor};">+${evidence.score || 30}pts</span>
+                    </div>
+                    <div class="hint">${evidence.hint}</div>
+                `;
+                list.appendChild(item);
+            });
+        }
+
+        // スキャンエフェクト
+        function showScanEffect(text, x, y) {
+            const effect = document.createElement('div');
+            effect.className = 'scan-effect';
+            
+            // 改行を<br>に変換
+            effect.innerHTML = text.replace(/\n/g, '<br>');
+            
+            effect.style.cssText = `
+                position: absolute;
+                left: ${x}px;
+                top: ${y}px;
+                transform: translate(-50%, -100%);
+                background: rgba(0, 0, 0, 0.9);
+                color: white;
+                padding: 8px 12px;
+                border-radius: 8px;
+                font-size: 14px;
+                font-weight: bold;
+                text-align: center;
+                pointer-events: none;
+                z-index: 1000;
+                white-space: nowrap;
+                border: 2px solid #fff;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+                animation: scanPop 1s ease-out forwards;
+            `;
+            
+            document.getElementById('gameScreen').appendChild(effect);
+            
+            setTimeout(() => {
+                effect.remove();
+            }, 2000);
+        }
+
+        // 推理フェーズ開始
+        function startDeductionPhase() {
+            gameState.phase = 'deduction';
+            
+            // 連続検出停止
+            stopContinuousDetection();
+            
+            // カメラ停止
+            if (gameState.stream) {
+                gameState.stream.getTracks().forEach(track => track.stop());
+            }
+            
+            // BGM停止
+            audioManager.stopBGM();
+            
+            // 犯人候補生成
+            generateSuspects();
+            
+            // UI切り替え
+            document.getElementById('gameScreen').style.display = 'none';
+            document.getElementById('deductionPhase').classList.add('active');
+        }
+
+        // 犯人候補生成
+        function generateSuspects() {
+            // 収集した証拠に基づいて犯人候補を生成
+            const evidenceTypes = gameState.evidence.map(e => e.type);
+            
+            // 各犯人タイプのスコアを計算
+            const suspectScores = criminalTypes.map(criminal => {
+                const score = criminal.relatedEvidence.filter(e => 
+                    evidenceTypes.includes(e)
+                ).length;
+                
+                return { ...criminal, score };
+            });
+            
+            // スコア順にソート
+            suspectScores.sort((a, b) => b.score - a.score);
+            
+            // 上位3人を候補に
+            gameState.suspects = suspectScores.slice(0, 3);
+            
+            // 真犯人を決定（最高スコアから確率的に）
+            const rand = Math.random();
+            if (rand < 0.6) {
+                gameState.trueCriminal = gameState.suspects[0];
+            } else if (rand < 0.85) {
+                gameState.trueCriminal = gameState.suspects[1];
+            } else {
+                gameState.trueCriminal = gameState.suspects[2];
+            }
+            
+            // ダミー候補を追加（ミスリード用）
+            const dummyCriminal = {
+                name: '通りすがりの人物',
+                description: '偶然現場にいただけの無関係な人物',
+                score: 0
+            };
+            gameState.suspects.push(dummyCriminal);
+            
+            // UI表示
+            displaySuspects();
+        }
+
+        // 犯人候補表示
+        function displaySuspects() {
+            const suspectList = document.getElementById('suspectList');
+            suspectList.innerHTML = '';
+            
+            // ランダムに並び替え
+            const shuffled = [...gameState.suspects].sort(() => Math.random() - 0.5);
+            
+            shuffled.forEach(suspect => {
+                const card = document.createElement('div');
+                card.className = 'suspect-card';
+                card.innerHTML = `
+                    <div class="suspect-name">${suspect.name}</div>
+                    <div class="suspect-description">${suspect.description}</div>
+                `;
+                card.onclick = () => selectSuspect(suspect);
+                suspectList.appendChild(card);
+            });
+        }
+
+        // 犯人選択
+        function selectSuspect(suspect) {
+            gameState.phase = 'result';
+            
+            const isCorrect = suspect.name === gameState.trueCriminal.name;
+            
+            // 結果画面表示
+            showResult(isCorrect, suspect);
+        }
+
+        // 結果表示
+        function showResult(isCorrect, selectedSuspect) {
+            const resultScreen = document.getElementById('resultScreen');
+            
+            // 音響効果
+            if (isCorrect) {
+                audioManager.playSound('successSound');
+                createParticles(20, window.innerWidth / 2, window.innerHeight / 2);
+            } else {
+                audioManager.playSound('failSound');
+            }
+            
+            // 最終スコア計算
+            const finalScore = isCorrect ? gameState.score + 200 : gameState.score;
+            const scorePercentage = Math.round((finalScore / gameState.maxScore) * 100);
+            const rank = scorePercentage >= 90 ? 'S' : 
+                        scorePercentage >= 80 ? 'A' : 
+                        scorePercentage >= 70 ? 'B' : 
+                        scorePercentage >= 60 ? 'C' : 'D';
+
+            if (isCorrect) {
+                resultScreen.innerHTML = `
+                    <div class="result-success">
+                        <h2>🎉 事件解決！</h2>
+                        <div class="result-message">
+                            見事だ！君の推理は正しかった。<br>
+                            犯人は「${selectedSuspect.name}」だった。<br><br>
+                            ${gameState.currentScenario.name}は解決された。<br>
+                            ${generateSuccessStory()}
+                        </div>
+                        <div style="background: rgba(0, 255, 0, 0.1); border: 1px solid #00ff00; 
+                                    padding: 15px; border-radius: 10px; margin: 20px 0;">
+                            <div style="font-size: 1.5rem; margin-bottom: 10px;">
+                                🏆 評価ランク: <span style="color: #00ff00; font-weight: bold;">${rank}</span>
+                            </div>
+                            <div>📊 最終スコア: ${finalScore}/${gameState.maxScore} (${scorePercentage}%)</div>
+                            <div>🔍 証拠収集: ${gameState.evidence.length}個</div>
+                            <div>⭐ 推理正解ボーナス: +200pts</div>
+                        </div>
+                        <button class="retry-button" onclick="location.reload()">🔄 新しい事件へ</button>
+                    </div>
+                `;
+            } else {
+                resultScreen.innerHTML = `
+                    <div class="result-fail">
+                        <h2>💀 推理失敗...</h2>
+                        <div class="result-message">
+                            違う...犯人は「${gameState.trueCriminal.name}」だった。<br><br>
+                            ${gameState.currentScenario.name}は未解決となった。<br>
+                            ${generateFailStory()}
+                        </div>
+                        <div style="background: rgba(255, 0, 0, 0.1); border: 1px solid #ff0000; 
+                                    padding: 15px; border-radius: 10px; margin: 20px 0;">
+                            <div style="font-size: 1.5rem; margin-bottom: 10px;">
+                                📉 評価ランク: <span style="color: #ff6666; font-weight: bold;">${rank}</span>
+                            </div>
+                            <div>📊 最終スコア: ${finalScore}/${gameState.maxScore} (${scorePercentage}%)</div>
+                            <div>🔍 証拠収集: ${gameState.evidence.length}個</div>
+                            <div>❌ 推理不正解: ボーナスなし</div>
+                            <div style="margin-top: 10px; font-size: 0.9rem; color: #ccc;">
+                                正解: ${gameState.trueCriminal.name} - ${gameState.currentScenario.criminalProfile.motive}
+                            </div>
+                        </div>
+                        <button class="retry-button" onclick="location.reload()">🔄 もう一度挑戦</button>
+                    </div>
+                `;
+            }
+            
+            document.getElementById('deductionPhase').style.display = 'none';
+            resultScreen.classList.add('active');
+        }
+
+        // 成功ストーリー生成
+        function generateSuccessStory() {
+            const stories = [
+                '証拠の積み重ねが、犯人を追い詰めた。',
+                '君の鋭い観察眼が、真実を見抜いた。',
+                '論理的な推理が、事件の全貌を明らかにした。',
+                '小さな手がかりも見逃さない、名探偵の誕生だ。'
+            ];
+            return stories[Math.floor(Math.random() * stories.length)];
+        }
+
+        // 失敗ストーリー生成
+        function generateFailStory() {
+            const stories = [
+                '証拠の見落としが、致命的なミスとなった。',
+                '思い込みが、真実から目を背けさせた。',
+                '犯人の巧妙な罠に、まんまと引っかかってしまった。',
+                'もう少しで真実に辿り着けたのに...'
+            ];
+            return stories[Math.floor(Math.random() * stories.length)];
+        }
+
+        // パーティクル効果
+        function createParticles(count, centerX = null, centerY = null, color = '#ffff00') {
+            const container = document.body;
+            
+            for (let i = 0; i < count; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                
+                const x = centerX || Math.random() * window.innerWidth;
+                const y = centerY || Math.random() * window.innerHeight;
+                
+                particle.style.cssText = `
+                    position: absolute;
+                    left: ${x}px;
+                    top: ${y}px;
+                    width: 8px;
+                    height: 8px;
+                    background: ${color};
+                    border-radius: 50%;
+                    pointer-events: none;
+                    z-index: 1000;
+                    animation: particleFall 2s ease-out forwards;
+                    animation-delay: ${Math.random() * 0.5}s;
+                `;
+                
+                container.appendChild(particle);
+                
+                // 2秒後に削除
+                setTimeout(() => {
+                    particle.remove();
+                }, 2500);
+            }
+        }
+        
+        // 3D情報オーバーレイ表示
+        function show3DInfoOverlay(prediction, tapX, tapY, objectType, confidence) {
+            // 既存のオーバーレイを削除
+            const existingOverlay = document.querySelector('.info-overlay-3d');
+            if (existingOverlay) {
+                existingOverlay.remove();
+            }
+            
+            const [x, y, width, height] = prediction.bbox;
+            const japaneseName = objectNames[objectType] || objectType;
+            const evidenceQuality = getEvidenceQuality(objectType);
+            const isEvidence = evidenceHints[objectType];
+            const collectedTypes = gameState.evidence.map(e => e.type);
+            const isCollected = collectedTypes.includes(objectType);
+            
+            // 詳細分析データ
+            const analysisData = generateAdvancedAnalysis(objectType, confidence);
+            
+            // オーバーレイパネル作成
+            const overlay = document.createElement('div');
+            overlay.className = 'info-overlay-3d';
+            
+            // 画面座標に変換
+            const canvas = document.getElementById('canvas');
+            const rect = canvas.getBoundingClientRect();
+            const screenX = (x + width/2) * (rect.width / canvas.width) + rect.left;
+            const screenY = y * (rect.height / canvas.height) + rect.top;
+            
+            const qualityColor = getQualityColor(evidenceQuality);
+            const qualityText = getQualityDisplayText(evidenceQuality);
+            
+            overlay.style.cssText = `
+                position: absolute;
+                left: ${screenX}px;
+                top: ${screenY - 20}px;
+                transform: translate(-50%, -100%);
+                background: rgba(0, 0, 0, 0.95);
+                border: 2px solid ${qualityColor};
+                border-radius: 12px;
+                padding: 15px;
+                min-width: 280px;
+                max-width: 350px;
+                z-index: 1500;
+                color: white;
+                font-size: 13px;
+                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8);
+                backdrop-filter: blur(10px);
+                animation: overlayFloat 0.5s ease-out;
+                pointer-events: all;
+            `;
+            
+            // コンテンツ生成
+            let statusIcon = '';
+            let statusText = '';
+            
+            if (isCollected) {
+                statusIcon = '✅';
+                statusText = '収集済み';
+            } else if (isEvidence) {
+                statusIcon = evidenceQuality === 'decisive' ? '🔴' : 
+                             evidenceQuality === 'circumstantial' ? '🟡' : 
+                             evidenceQuality === 'false' ? '⚫' : '🔵';
+                statusText = isEvidence ? '証拠候補' : '一般物体';
+            } else {
+                statusIcon = '📝';
+                statusText = '一般物体';
+            }
+            
+            overlay.innerHTML = `
+                <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                    <div style="font-size: 24px; margin-right: 10px;">${statusIcon}</div>
+                    <div>
+                        <div style="font-weight: bold; color: ${qualityColor}; font-size: 16px;">${japaneseName}</div>
+                        <div style="color: #ccc; font-size: 11px;">${statusText} | 信頼度: ${confidence}%</div>
+                    </div>
+                </div>
+                
+                ${isEvidence ? `
+                <div style="background: rgba(${qualityColor.slice(1,3)}, ${qualityColor.slice(3,5)}, ${qualityColor.slice(5,7)}, 0.2); 
+                           padding: 8px; border-radius: 6px; margin-bottom: 10px;">
+                    <div style="font-weight: bold; margin-bottom: 5px;">${qualityText} 証拠</div>
+                    <div style="font-size: 11px; line-height: 1.4;">
+                        ${evidenceHints[objectType][0]}
+                    </div>
+                </div>
+                ` : ''}
+                
+                <div style="border-top: 1px solid #333; padding-top: 8px; margin-top: 8px;">
+                    <div style="font-weight: bold; margin-bottom: 5px; color: #ff6666;">🔬 AI分析結果</div>
+                    <div style="font-size: 11px; line-height: 1.3;">
+                        ${analysisData.condition}<br>
+                        ${analysisData.context}<br>
+                        ${analysisData.significance}
+                    </div>
+                </div>
+                
+                <div style="text-align: center; margin-top: 10px;">
+                    <button onclick="closeInfoOverlay()" style="
+                        background: ${qualityColor};
+                        color: white;
+                        border: none;
+                        padding: 6px 15px;
+                        border-radius: 15px;
+                        font-size: 11px;
+                        cursor: pointer;
+                        transition: all 0.2s ease;
+                    ">閉じる</button>
+                </div>
+            `;
+            
+            document.getElementById('gameScreen').appendChild(overlay);
+            
+            // 3秒後に自動で閉じる
+            setTimeout(() => {
+                if (overlay.parentNode) {
+                    overlay.remove();
+                }
+            }, 5000);
+        }
+        
+        // 高度なAI分析データ生成
+        function generateAdvancedAnalysis(objectType, confidence) {
+            const analysisTemplates = {
+                'cup': {
+                    condition: ['表面に指紋痕跡あり', '液体の残留物を検出', '取っ手部分に摩耗跡', '口紅の付着を確認'],
+                    context: ['最近使用された形跡', '複数人による使用の可能性', '急いで置かれた痕跡', '温度差による結露'],
+                    significance: ['DNA採取可能', '時系列推定の手がかり', '関係者特定に有効', '飲用物質の分析可能']
+                },
+                'book': {
+                    condition: ['ページに血痕を検出', '表紙に損傷あり', 'しおりの位置が不自然', '特定ページが開いたまま'],
+                    context: ['争いの最中に使用', '隠蔽工作の可能性', '重要な情報が記載', 'ダイイングメッセージの可能性'],
+                    significance: ['現場の状況を示唆', 'メッセージ性あり', '動機解明の鍵', '時刻特定に有効']
+                },
+                'scissors': {
+                    condition: ['刃部に血液付着', '指紋が明瞭に残存', '刃こぼれを確認', '繊維片が挟まっている'],
+                    context: ['凶器として使用', '激しい抵抗があった', '計画的犯行の証拠', '切断痕が複数箇所に'],
+                    significance: ['決定的な物的証拠', '犯人特定可能', 'DNA鑑定必須', '犯行手順の再現可能']
+                },
+                'knife': {
+                    condition: ['血液反応陽性', '刃文に異物付着', '柄部分に圧迫痕', '切れ味の変化'],
+                    context: ['主要凶器と推定', '防御創の可能性', '計画性の高い犯行', '複数回の使用'],
+                    significance: ['致命傷との一致性', '犯人の身体特徴推定', '犯行時間の特定', '動機の解明']
+                },
+                'bottle': {
+                    condition: ['破損パターンを解析', '内容物の残留', '指紋の重複検出', '衝撃痕の分析'],
+                    context: ['投擲武器として使用', '飲酒の痕跡', '争いの激化', '衝動的行動'],
+                    significance: ['力の方向性判定', 'アルコール濃度測定', '投擲者の特定', '事件の経過推定']
+                },
+                'laptop': {
+                    condition: ['電源状態を確認', '最終操作時刻記録', '画面に損傷', 'データ改竄の痕跡'],
+                    context: ['作業中の中断', '情報漏洩の可能性', '金銭的動機', 'サイバー犯罪の関与'],
+                    significance: ['デジタル証拠の宝庫', '動機の解明', '共犯者の存在', '時系列の確定']
+                },
+                'cell phone': {
+                    condition: ['通話履歴を解析', 'GPS位置情報記録', '画面ロック状態', 'メッセージ未読'],
+                    context: ['緊急時の使用', '犯人との連絡', '位置の特定', '最後の行動'],
+                    significance: ['行動パターン分析', '関係者との接触', '犯行前後の動向', 'アリバイ確認']
+                },
+                'chair': {
+                    condition: ['座面の圧迫痕', '脚部の損傷', '血痕の飛散パターン', '繊維の付着'],
+                    context: ['争いの際の移動', '防御に使用', '現場の荒廃', '体重・体型の推定'],
+                    significance: ['身体的特徴の推定', '争いの激しさ', '現場での行動', '犯人の身長推定']
+                },
+                'vase': {
+                    condition: ['破片の散乱パターン', '内容物の飛散', '持ち手の指紋', '衝撃の方向性'],
+                    context: ['投擲による破壊', '装飾品から凶器へ', '衝動的行動', '怒りの表現'],
+                    significance: ['投擲の軌道解析', '犯人の位置特定', '感情的動機', '争いの始点']
+                },
+                'remote': {
+                    condition: ['ボタンの押下痕', '電池の消耗状態', '設定の変更', '位置の異常性'],
+                    context: ['日常的な使用', '最後の操作', '生活パターン', '時間の手がかり'],
+                    significance: ['生活習慣の分析', '最終行動時刻', '被害者の状況', '現場の自然性']
+                },
+                'clock': {
+                    condition: ['停止時刻の記録', '針の位置異常', '電源の状態', '設定時刻のずれ'],
+                    context: ['犯行時刻の特定', '計画性の証拠', 'アリバイ工作', 'ダイイングメッセージ'],
+                    significance: ['正確な時刻特定', '犯行の計画性', 'メッセージ性', 'アリバイの検証']
+                }
+            };
+            
+            const template = analysisTemplates[objectType] || {
+                condition: ['物理的変化を検出', '使用痕跡あり', '位置に異常性', '環境との不整合'],
+                context: ['事件との関連性あり', '現場の状況を反映', '時系列の手がかり', '行動パターンの示唆'],
+                significance: ['捜査上重要', '状況証拠として有効', '関連性要検証', '総合的判断材料']
+            };
+            
+            // 信頼度に基づく分析の詳細度調整
+            const detailLevel = confidence >= 70 ? 'high' : confidence >= 50 ? 'medium' : 'low';
+            
+            let analysisResult = {
+                condition: template.condition[Math.floor(Math.random() * template.condition.length)],
+                context: template.context[Math.floor(Math.random() * template.context.length)],
+                significance: template.significance[Math.floor(Math.random() * template.significance.length)]
+            };
+            
+            // 高信頼度の場合、より具体的な分析を追加
+            if (detailLevel === 'high') {
+                analysisResult.additional = generateEnvironmentalContext();
+            }
+            
+            return analysisResult;
+        }
+        
+        // 環境コンテキスト分析
+        function generateEnvironmentalContext() {
+            const environmentalFactors = [
+                '室温・湿度が証拠保存に影響',
+                '照明条件が視認性に関与',
+                '音響環境が行動に制約',
+                '空気の流れが物質移動に影響',
+                '時間帯が行動パターンに関連',
+                '季節要因が心理状態に影響'
+            ];
+            
+            return environmentalFactors[Math.floor(Math.random() * environmentalFactors.length)];
+        }
+        
+        // AI推理アシスタント機能
+        function getAIDeductionHint() {
+            const evidenceCount = gameState.evidence.length;
+            const scenario = gameState.currentScenario;
+            
+            if (!scenario) return null;
+            
+            const hints = [
+                '収集した証拠間の関連性を分析してください',
+                '時系列の整合性を確認することが重要です',
+                '物理的証拠と心理的動機の一致を検証してください',
+                '犯人の行動パターンに矛盾がないか確認が必要です',
+                '証拠の品質と信頼性を総合的に判断してください'
+            ];
+            
+            if (evidenceCount >= 3) {
+                return {
+                    type: 'analysis',
+                    message: hints[Math.floor(Math.random() * hints.length)],
+                    evidenceTypes: gameState.evidence.map(e => e.type)
+                };
+            }
+            
+            return null;
+        }
+        
+        // オーバーレイを閉じる
+        function closeInfoOverlay() {
+            const overlay = document.querySelector('.info-overlay-3d');
+            if (overlay) {
+                overlay.style.animation = 'overlayFadeOut 0.3s ease-in forwards';
+                setTimeout(() => overlay.remove(), 300);
+            }
+        }
+        
+        // 音量切り替え
+        function toggleVolume() {
+            audioManager.toggleMute();
+        }
+        
+        // 初期化
+        window.addEventListener('load', () => {
+            audioManager.init();
+        });
+        
+        // 予測結果の集約と精度向上
+        function aggregatePredictions(predictions) {
+            const grouped = {};
+            
+            // 同じクラスの予測を集約
+            predictions.forEach(pred => {
+                const className = pred.class;
+                if (!grouped[className]) {
+                    grouped[className] = [];
+                }
+                grouped[className].push(pred);
+            });
+            
+            const result = [];
+            
+            // 各クラスの最高信頼度を選択
+            Object.keys(grouped).forEach(className => {
+                const classePredictions = grouped[className];
+                
+                // 信頼度順にソート
+                classePredictions.sort((a, b) => b.score - a.score);
+                
+                // 最も信頼度の高い予測を採用
+                const bestPrediction = classePredictions[0];
+                
+                // 複数の検出がある場合は信頼度をブースト
+                if (classePredictions.length > 1) {
+                    bestPrediction.score = Math.min(0.99, bestPrediction.score * 1.2);
+                }
+                
+                result.push(bestPrediction);
+            });
+            
+            return result;
+        }
+        
+        // 動的信頼度閾値設定
+        function getDynamicThreshold(className) {
+            // 証拠として重要な物体は閾値を下げる
+            const evidenceThresholds = {
+                // 頻繁に検出される物体（高い閾値）
+                'person': 0.45,
+                'car': 0.50,
+                'tv': 0.40,
+                
+                // 証拠として重要な物体（低い閾値）
+                'cup': 0.25,
+                'book': 0.25,
+                'cell phone': 0.20,
+                'laptop': 0.30,
+                'knife': 0.20,
+                'bottle': 0.25,
+                'chair': 0.35,
+                'clock': 0.20,
+                'potted plant': 0.30,
+                'bag': 0.25,
+                'backpack': 0.25,
+                'handbag': 0.25,
+                'scissors': 0.20,
+                'remote': 0.25,
+                'mouse': 0.20,
+                'keyboard': 0.25,
+                'vase': 0.25,
+                
+                // 小さい物体（さらに低い閾値）
+                'spoon': 0.15,
+                'fork': 0.15,
+                'toothbrush': 0.15,
+                'wine glass': 0.20,
+                'bowl': 0.20,
+                'microwave': 0.30,
+                
+                // 新たに追加された証拠物体
+                'couch': 0.40,
+                'bed': 0.35,
+                'dining table': 0.35
+            };
+            
+            return evidenceThresholds[className] || 0.35;
+        }
+        
+        // 全検出結果の表示（重複除外機能付き）
+        function drawAllDetections(predictions, ctx) {
+            // 既に収集済みの証拠タイプを取得
+            const collectedTypes = gameState.evidence.map(e => e.type);
+            
+            predictions.forEach((prediction, index) => {
+                const [x, y, width, height] = prediction.bbox;
+                const className = prediction.class;
+                const confidence = Math.round(prediction.score * 100);
+                const japaneseName = objectNames[className] || className;
+                
+                // 証拠物体かどうかと信頼度閾値をチェック
+                const isEvidence = evidenceHints[className];
+                const isCollected = collectedTypes.includes(className);
+                const dynamicThreshold = getDynamicThreshold(className);
+                const meetsThreshold = confidence >= dynamicThreshold;
+                
+                console.log(`${className}: 信頼度${confidence}%, 閾値${Math.round(dynamicThreshold*100)}%, 証拠物体: ${isEvidence}, 閾値満足: ${meetsThreshold}`);
+                
+                let boxColor, alpha;
+                if (isEvidence && meetsThreshold && !isCollected) {
+                    // 新しい有効な証拠: 緑色
+                    boxColor = '#00ff00';
+                    alpha = '0.8';
+                } else if (isEvidence && isCollected) {
+                    // 既に収集済みの証拠: 黄色
+                    boxColor = '#ffaa00';
+                    alpha = '0.6';
+                } else if (isEvidence && !meetsThreshold) {
+                    // 証拠物体だが信頼度不足: オレンジ色
+                    boxColor = '#ff6600';
+                    alpha = '0.5';
+                } else {
+                    // 一般物体: 灰色
+                    boxColor = '#666666';
+                    alpha = '0.4';
+                }
+                
+                // バウンディングボックス
+                ctx.strokeStyle = boxColor;
+                ctx.lineWidth = (isEvidence && meetsThreshold) ? 3 : 1;
+                ctx.setLineDash((isEvidence && meetsThreshold && !isCollected) ? [] : [5, 5]);
+                ctx.strokeRect(x, y, width, height);
+                
+                // ラベル背景
+                let labelText = `${japaneseName} ${confidence}%`;
+                if (isCollected) {
+                    labelText += ' ✓'; // チェックマークで収集済みを表示
+                } else if (isEvidence && !meetsThreshold) {
+                    labelText += ` (要${Math.round(dynamicThreshold*100)}%+)`; // 必要な閾値を表示
+                }
+                
+                ctx.font = '14px Arial';
+                const textWidth = ctx.measureText(labelText).width;
+                
+                ctx.fillStyle = boxColor + Math.round(255 * parseFloat(alpha)).toString(16).padStart(2, '0');
+                ctx.fillRect(x, y - 25, textWidth + 10, 20);
+                
+                // ラベルテキスト
+                ctx.fillStyle = '#ffffff';
+                ctx.fillText(labelText, x + 5, y - 10);
+                
+                // 破線をリセット
+                ctx.setLineDash([]);
+            });
+        }
+        
+        // 連続検出モード（無効化済み）
+        let continuousDetectionInterval = null;
+        
+        function startContinuousDetection() {
+            // タップベースの検知システムを使用するため無効化
+            console.log('連続検出モードは無効化されています - タップして物体を検知してください');
+        }
+        
+        function stopContinuousDetection() {
+            if (continuousDetectionInterval) {
+                clearInterval(continuousDetectionInterval);
+                continuousDetectionInterval = null;
+            }
+        }
+        
+        // ページ離脱時の処理
+        window.addEventListener('beforeunload', () => {
+            stopContinuousDetection();
+            if (gameState.stream) {
+                gameState.stream.getTracks().forEach(track => track.stop());
+            }
+            audioManager.stopBGM();
+        });
+    </script>
+</body>
+</html>

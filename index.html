@@ -1,13 +1,147 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ja">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>メモるんです。- ARメモアプリ</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AR探偵ゲーム - メモるんです。</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Noto Sans JP', -apple-system, sans-serif;
+            background: linear-gradient(135deg, #1a0000, #000);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+        
+        .container {
+            max-width: 600px;
+            padding: 40px 20px;
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 20px;
+            border: 2px solid #ff0000;
+            box-shadow: 0 0 30px rgba(255, 0, 0, 0.3);
+        }
+        
+        .title {
+            font-size: 3rem;
+            color: #ff0000;
+            margin-bottom: 20px;
+            text-shadow: 0 0 20px rgba(255, 0, 0, 0.5);
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            color: #ccc;
+            margin-bottom: 30px;
+        }
+        
+        .description {
+            font-size: 1rem;
+            color: #ddd;
+            line-height: 1.6;
+            margin-bottom: 40px;
+        }
+        
+        .features {
+            text-align: left;
+            margin-bottom: 40px;
+        }
+        
+        .features h3 {
+            color: #ff6666;
+            margin-bottom: 15px;
+        }
+        
+        .features ul {
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        .features li {
+            margin-bottom: 10px;
+            padding-left: 20px;
+            position: relative;
+        }
+        
+        .features li:before {
+            content: "🔍";
+            position: absolute;
+            left: 0;
+        }
+        
+        .start-button {
+            background: #ff0000;
+            color: white;
+            border: none;
+            padding: 20px 60px;
+            font-size: 1.3rem;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 30px rgba(255, 0, 0, 0.3);
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .start-button:hover {
+            background: #cc0000;
+            transform: scale(1.05);
+            box-shadow: 0 0 40px rgba(255, 0, 0, 0.5);
+        }
+        
+        .footer {
+            margin-top: 30px;
+            font-size: 0.9rem;
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="title">🕵️ AR探偵ゲーム</h1>
+        <p class="subtitle">メモるんです。- 現場検証モード</p>
+        
+        <div class="description">
+            最新のAI技術を使った本格的なAR探偵ゲーム。<br>
+            カメラで物体を検知し、証拠を収集して事件を解決せよ。
+        </div>
+        
+        <div class="features">
+            <h3>🎮 ゲーム機能</h3>
+            <ul>
+                <li>3つの事件シナリオ（書斎、キッチン、リビング）</li>
+                <li>タップベースの物体検知システム</li>
+                <li>証拠品質ランクシステム（決定的・状況・補助・偽証拠）</li>
+                <li>3D情報オーバーレイ表示</li>
+                <li>高度なAI分析システム</li>
+                <li>スコアリング＆ランク評価</li>
+            </ul>
+        </div>
+        
+        <a href="ar-detective-game.html" class="start-button">
+            🚪 ゲーム開始
+        </a>
+        
+        <div class="footer">
+            ※ カメラアクセス許可が必要です<br>
+            Chrome、Firefox、Safari等の最新ブラウザ推奨
+        </div>
+    </div>
+</body>
 </html>
