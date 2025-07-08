@@ -52,7 +52,8 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
+            justify-content: flex-start;
+            padding-top: 15vh;
             z-index: 100;
             transition: opacity 1s ease;
         }
@@ -65,12 +66,12 @@
         .logo-only {
             display: flex;
             justify-content: center;
-            margin-bottom: 40px;
+            margin-bottom: 80px;
         }
         
         .game-logo {
-            width: 200px;
-            height: 200px;
+            width: 400px;
+            height: 400px;
             filter: drop-shadow(0 0 40px rgba(255, 204, 0, 0.8));
             animation: pulse 2s infinite;
         }
@@ -78,34 +79,53 @@
         /* スマホ画面用の調整 */
         @media (max-width: 768px) {
             .logo-only {
-                margin-bottom: 20px;
+                margin-bottom: 40px;
             }
             
             .game-logo {
-                width: 120px;
-                height: 120px;
+                width: 250px;
+                height: 250px;
                 filter: drop-shadow(0 0 25px rgba(255, 204, 0, 0.8));
             }
             
             .narration {
-                bottom: 80px;
+                bottom: 50px;
                 max-width: 90%;
-                padding: 15px 25px;
+                padding: 20px 25px;
                 font-size: 1rem;
+                line-height: 1.4;
+                min-height: 120px;
+            }
+            
+            .start-button {
+                padding: 12px 30px;
+                font-size: 1.1rem;
             }
         }
         
         /* 小さなスマホ画面用の追加調整 */
         @media (max-width: 480px) {
+            .logo-only {
+                margin-bottom: 30px;
+            }
+            
             .game-logo {
-                width: 100px;
-                height: 100px;
+                width: 200px;
+                height: 200px;
             }
             
             .narration {
-                bottom: 60px;
-                padding: 12px 20px;
-                font-size: 0.9rem;
+                bottom: 40px;
+                max-width: 85%;
+                padding: 18px 25px;
+                font-size: 0.95rem;
+                line-height: 1.3;
+                min-height: 110px;
+            }
+            
+            .start-button {
+                padding: 10px 25px;
+                font-size: 1rem;
             }
         }
         
@@ -116,23 +136,59 @@
         
         .narration {
             position: absolute;
-            bottom: 100px;
+            bottom: 40px;
             left: 50%;
             transform: translateX(-50%);
             background: rgba(0, 0, 0, 0.9);
-            padding: 20px 40px;
+            padding: 25px 50px;
             border: 2px solid #ff0000;
             border-radius: 10px;
             font-size: 1.1rem;
-            max-width: 80%;
+            max-width: 90%;
             text-align: center;
+            opacity: 1;
+            min-height: 150px;
+        }
+        
+        .typewriter-line {
+            margin-bottom: 3px;
+            min-height: 1.3em;
+        }
+        
+        .typewriter-line:empty {
+            margin-bottom: 10px;
+        }
+        
+        .typewriter-char {
             opacity: 0;
-            animation: fadeIn 2s forwards;
-            animation-delay: 1s;
+            animation: typeIn 0.1s forwards;
+        }
+        
+        .narration.fade-out {
+            animation: fadeOut 1s forwards;
         }
         
         @keyframes fadeIn {
             to { opacity: 1; }
+        }
+        
+        @keyframes typeIn {
+            to { opacity: 1; }
+        }
+        
+        @keyframes fadeOut {
+            to { opacity: 0; }
+        }
+        
+        @keyframes buttonFadeIn {
+            from { 
+                opacity: 0; 
+                transform: translate(-50%, -30px); 
+            }
+            to { 
+                opacity: 1; 
+                transform: translate(-50%, -50%); 
+            }
         }
         
         .start-button {
@@ -144,9 +200,15 @@
             border-radius: 50px;
             cursor: pointer;
             transition: all 0.3s ease;
-            opacity: 0;
-            animation: fadeIn 2s forwards;
-            animation-delay: 3s;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 30px rgba(255, 0, 0, 0.3);
+        }
+        
+        .start-button.show {
+            animation: buttonFadeIn 1s ease forwards;
         }
         
         .start-button:hover {
@@ -816,12 +878,14 @@
         <div class="logo-only">
             <img src="rogo.png" alt="AR探偵ロゴ" class="game-logo">
         </div>
-        <div class="narration">
-            事件発生から3時間...<br>
-            現場は犯行当時のまま保存されている<br>
-            君の推理で真実を暴け
+        <div class="narration" id="narrationText">
+            <div class="typewriter-line" id="line1"></div>
+            <div class="typewriter-line" id="line2"></div>
+            <div class="typewriter-line" id="line3"></div>
+            <div class="typewriter-line" id="line4"></div>
+            <div class="typewriter-line" id="line5"></div>
         </div>
-        <button class="start-button" onclick="showScenarioSelection()">🚪 事件現場へ</button>
+        <button class="start-button" id="startButton" onclick="showScenarioSelection()" style="display: none;">🚪 事件現場へ</button>
         
         <!-- 音量コントロール -->
         <div class="volume-control">
@@ -4189,6 +4253,77 @@
                 continuousDetectionInterval = null;
             }
         }
+        
+        // タイプライター効果
+        function typewriterEffect() {
+            const texts = [
+                '事件発生から3時間...',
+                '現場は犯行当時のまま',
+                '保存されてる',
+                '',
+                '君の推理で真実を暴け'
+            ];
+            
+            let lineIndex = 0;
+            let charIndex = 0;
+            
+            function typeNextChar() {
+                if (lineIndex >= texts.length) {
+                    // 全文字表示完了後、2秒待ってから消去&ボタン表示
+                    setTimeout(() => {
+                        hideNarrationAndShowButton();
+                    }, 2000);
+                    return;
+                }
+                
+                const currentLine = document.getElementById(`line${lineIndex + 1}`);
+                const currentText = texts[lineIndex];
+                
+                if (charIndex < currentText.length) {
+                    // 文字を一文字ずつ表示
+                    const char = currentText[charIndex];
+                    const span = document.createElement('span');
+                    span.classList.add('typewriter-char');
+                    span.textContent = char;
+                    currentLine.appendChild(span);
+                    
+                    // アニメーション遅延を設定
+                    setTimeout(() => {
+                        span.style.animationDelay = '0s';
+                    }, 10);
+                    
+                    charIndex++;
+                    setTimeout(typeNextChar, 80); // 80ms間隔で次の文字
+                } else {
+                    // 改行（次の行へ）
+                    lineIndex++;
+                    charIndex = 0;
+                    setTimeout(typeNextChar, 300); // 行間300ms待機
+                }
+            }
+            
+            // 最初の1秒待機後に開始
+            setTimeout(typeNextChar, 1000);
+        }
+        
+        function hideNarrationAndShowButton() {
+            const narration = document.getElementById('narrationText');
+            const button = document.getElementById('startButton');
+            
+            // テキストをフェードアウト
+            narration.classList.add('fade-out');
+            
+            // 1秒後にボタンを表示
+            setTimeout(() => {
+                button.style.display = 'block';
+                button.classList.add('show');
+            }, 1000);
+        }
+        
+        // ページ読み込み時にタイプライター効果を開始
+        window.addEventListener('load', () => {
+            typewriterEffect();
+        });
         
         // ページ離脱時の処理
         window.addEventListener('beforeunload', () => {
