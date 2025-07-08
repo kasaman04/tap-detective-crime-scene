@@ -42,7 +42,7 @@ function Home() {
   return (
     <div className="home-container">
       <header className="home-header">
-        <h1>しょーもモリー</h1>
+        <h1>メモるんです。</h1>
         <p className="tagline">しょーもないけど、ちょっと便利。</p>
       </header>
 

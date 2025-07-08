@@ -1,7 +1,7 @@
 {
-  "name": "shomo-mory",
+  "name": "memorundesu",
   "version": "1.0.0",
-  "description": "カメラで物体をかざしてメモを記録・表示できるAR風メモアプリ",
+  "description": "メモるんです。- カメラで物体をかざしてメモを記録・表示できるAR風メモアプリ",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
